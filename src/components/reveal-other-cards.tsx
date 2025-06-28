@@ -58,7 +58,7 @@ export default function RevealOtherCards() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ height: '100vh', py: 2 }}>
+    <Container maxWidth="sm" sx={{ height: '100vh', py: 2, background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)'}}>
       <Box 
         sx={{ 
           display: 'flex', 
@@ -172,9 +172,35 @@ export default function RevealOtherCards() {
           )}
         </Box>
 
+        <Card sx={{ flexGrow: 1, width: "50%" }}>
+          <Box sx={{ textAlign: 'center', py: 1 }}>
+            <Typography variant="h6" gutterBottom>
+              あなた
+            </Typography>
+            {gameState.currentScoreCard && (
+              <Paper 
+                elevation={6} 
+                sx={{ 
+                  p: 3, 
+                  display: 'inline-block',
+                  backgroundColor: gameState.currentScoreCard > 0 ? 'success.main' : 'error.main',
+                  color: gameState.currentScoreCard > 0 ? 'success.contrastText' : 'error.contrastText'
+                }}
+              >
+                <Typography variant="h2">
+                  {gameState.currentScoreCard}
+                </Typography>
+              </Paper>
+            )}
+            <Typography variant='body1' sx={{ mt: 2 }}>
+              現在のスコア：{currentPlayer?.score || 0}
+            </Typography>
+          </Box>
+        </Card>
+
         {/* 下部：自分のカード */}
-        <Box>
-          <Card>
+        {/* <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Card sx={{ width: 200 }}>
             <CardContent>
               <Typography variant="h6" component="div" gutterBottom>
                 {currentPlayer?.name || 'あなた'}
@@ -183,7 +209,8 @@ export default function RevealOtherCards() {
                 <Paper 
                   elevation={3} 
                   sx={{ 
-                    p: 2, 
+                    px: 6,
+                    py: 2, 
                     textAlign: 'center',
                     backgroundColor: 'secondary.main',
                     color: 'secondary.contrastText'
@@ -194,9 +221,12 @@ export default function RevealOtherCards() {
                   </Typography>
                 </Paper>
               )}
+              <Typography variant='body1' sx={{ mt: 2 }}>
+                現在のスコア：{currentPlayer?.score || 0}
+              </Typography>
             </CardContent>
           </Card>
-        </Box>
+        </Box> */}
 
         {/* 次のラウンドボタン */}
         {gameState.players.every(p => p.playedCard !== null) && (

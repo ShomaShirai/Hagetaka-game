@@ -55,7 +55,7 @@ export default function SelectNumber() {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ height: '100vh', py: 2 }}>
+    <Container maxWidth="sm" sx={{ height: '100vh', py: 2, background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)' }}>
       <Box 
         sx={{ 
           display: 'flex', 
@@ -67,7 +67,11 @@ export default function SelectNumber() {
         {/* 上部：スコアカード */}
         <Card>
           <CardHeader
-            title={<Typography variant="h6">スコアカード</Typography>}
+            title={
+              <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                スコアカード
+              </Typography>
+            }
           />
           <CardContent>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
@@ -112,7 +116,11 @@ export default function SelectNumber() {
         {/* 下部：ユーザーカード選択 */}
         <Card sx={{ flexGrow: 1 }}>
           <CardHeader
-            title={<Typography variant="h6">カードを選択してください</Typography>}
+            title={
+              <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: "center"}}>
+                手持ちのカードから数字を選択してください
+              </Typography>
+            }
           />
           <CardContent>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mb: 2 }}>
@@ -134,7 +142,7 @@ export default function SelectNumber() {
             </Box>
             
             {selectedCard && (
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Box sx={{ textAlign: 'center', mt: 4 }}>
                 <Typography variant="body1" gutterBottom>
                   選択したカード: <strong>{selectedCard}</strong>
                 </Typography>
