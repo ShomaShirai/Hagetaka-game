@@ -171,52 +171,25 @@ export default function RevealOtherCards() {
             </Paper>
           )}
         </Box>
-
-        <Card sx={{ flexGrow: 1, width: "50%" }}>
-          <Box sx={{ textAlign: 'center', py: 1 }}>
-            <Typography variant="h6" gutterBottom>
-              あなた
-            </Typography>
-            {gameState.currentScoreCard && (
-              <Paper 
-                elevation={6} 
-                sx={{ 
-                  p: 3, 
-                  display: 'inline-block',
-                  backgroundColor: gameState.currentScoreCard > 0 ? 'success.main' : 'error.main',
-                  color: gameState.currentScoreCard > 0 ? 'success.contrastText' : 'error.contrastText'
-                }}
-              >
-                <Typography variant="h2">
-                  {gameState.currentScoreCard}
-                </Typography>
-              </Paper>
-            )}
-            <Typography variant='body1' sx={{ mt: 2 }}>
-              現在のスコア：{currentPlayer?.score || 0}
-            </Typography>
-          </Box>
-        </Card>
-
+        
         {/* 下部：自分のカード */}
-        {/* <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Card sx={{ width: 200 }}>
-            <CardContent>
-              <Typography variant="h6" component="div" gutterBottom>
-                {currentPlayer?.name || 'あなた'}
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <Card sx={{ flexGrow: 1, maxWidth: "40%" }}>
+            <Box sx={{ textAlign: 'center', py: 1 }}>
+              <Typography variant="h6" gutterBottom>
+                あなた
               </Typography>
               {currentPlayer?.playedCard && (
                 <Paper 
-                  elevation={3} 
+                  elevation={6} 
                   sx={{ 
-                    px: 6,
-                    py: 2, 
-                    textAlign: 'center',
+                    p: 3, 
+                    display: 'inline-block',
                     backgroundColor: 'secondary.main',
                     color: 'secondary.contrastText'
                   }}
                 >
-                  <Typography variant="h3">
+                  <Typography variant="h2">
                     {currentPlayer.playedCard}
                   </Typography>
                 </Paper>
@@ -224,13 +197,13 @@ export default function RevealOtherCards() {
               <Typography variant='body1' sx={{ mt: 2 }}>
                 現在のスコア：{currentPlayer?.score || 0}
               </Typography>
-            </CardContent>
+            </Box>
           </Card>
-        </Box> */}
+        </Box>
 
         {/* 次のラウンドボタン */}
         {gameState.players.every(p => p.playedCard !== null) && (
-          <Box sx={{ textAlign: 'center', mt: 2 }}>
+          <Box sx={{ textAlign: 'center', mt: 1 }}>
             <Button 
               variant="contained" 
               color="primary" 
@@ -245,3 +218,4 @@ export default function RevealOtherCards() {
     </Container>
   );
 }
+                  
