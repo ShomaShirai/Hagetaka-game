@@ -68,90 +68,94 @@ export default function RevealOtherCards() {
         }}
       >
         {/* 上部：他のプレイヤーのカード */}
-        <Box sx={{ flexGrow: 1 }}>
-          <Box sx={{ display: 'flex', gap: 2, height: '100%' }}>
-            {/* 左上のプレイヤー */}
-            <Box sx={{ flex: 1 }}>
-              <Card sx={{ height: '100%', minHeight: 120 }}>
-                <CardContent>
-                  <Typography variant="h6" component="div" gutterBottom>
-                    {otherPlayers[0]?.name || 'プレイヤー1'}
-                  </Typography>
-                  {otherPlayers[0]?.playedCard ? (
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 2, 
-                        textAlign: 'center',
-                        backgroundColor: 'primary.main',
-                        color: 'primary.contrastText'
-                      }}
-                    >
-                      <Typography variant="h3">
-                        {otherPlayers[0].playedCard}
-                      </Typography>
-                    </Paper>
-                  ) : (
-                    <Paper 
-                      elevation={1} 
-                      sx={{ 
-                        p: 2, 
-                        textAlign: 'center',
-                        backgroundColor: 'grey.300'
-                      }}
-                    >
-                      <Typography variant="h4">
-                        ?
-                      </Typography>
-                    </Paper>
-                  )}
-                </CardContent>
-              </Card>
-            </Box>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between' }}>
+          {/* 左上のプレイヤー */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
+            <Card sx={{ flexGrow: 1, minWidth: "30%" }}>
+              <Box sx={{ textAlign: 'center', py: 1 }}>
+                <Typography variant="h6" component="div" gutterBottom>
+                  {otherPlayers[0]?.name || 'プレイヤー1'}
+                </Typography>
+                {otherPlayers[0]?.playedCard ? (
+                  <Paper 
+                    elevation={3} 
+                    sx={{ 
+                      p: 3, 
+                      display: 'inline-block',
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText'
+                    }}
+                  >
+                    <Typography variant="h2">
+                      {otherPlayers[0].playedCard}
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Paper 
+                    elevation={1} 
+                    sx={{ 
+                      p: 3, 
+                      display: 'inline-block',
+                      backgroundColor: 'grey.300'
+                    }}
+                  >
+                    <Typography variant="h2">
+                      ?
+                    </Typography>
+                  </Paper>
+                )}
+                <Typography variant='body1' sx={{ mt: 2 }}>
+                  現在のスコア：{otherPlayers[0]?.score || 0}
+                </Typography>
+              </Box>
+            </Card>
+          </Box>
 
-            {/* 右上のプレイヤー */}
-            <Box sx={{ flex: 1 }}>
-              <Card sx={{ height: '100%', minHeight: 120 }}>
-                <CardContent>
-                  <Typography variant="h6" component="div" gutterBottom>
-                    {otherPlayers[1]?.name || 'プレイヤー2'}
-                  </Typography>
-                  {otherPlayers[1]?.playedCard ? (
-                    <Paper 
-                      elevation={3} 
-                      sx={{ 
-                        p: 2, 
-                        textAlign: 'center',
-                        backgroundColor: 'primary.main',
-                        color: 'primary.contrastText'
-                      }}
-                    >
-                      <Typography variant="h3">
-                        {otherPlayers[1].playedCard}
-                      </Typography>
-                    </Paper>
-                  ) : (
-                    <Paper 
-                      elevation={1} 
-                      sx={{ 
-                        p: 2, 
-                        textAlign: 'center',
-                        backgroundColor: 'grey.300'
-                      }}
-                    >
-                      <Typography variant="h4">
-                        ?
-                      </Typography>
-                    </Paper>
-                  )}
-                </CardContent>
-              </Card>
-            </Box>
+          {/* 右上のプレイヤー */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
+            <Card sx={{ flexGrow: 1, minWidth: "30%" }}>
+              <Box sx={{ textAlign: 'center', py: 1 }}>
+                <Typography variant="h6" component="div" gutterBottom>
+                  {otherPlayers[1]?.name || 'プレイヤー2'}
+                </Typography>
+                {otherPlayers[1]?.playedCard ? (
+                  <Paper 
+                    elevation={3} 
+                    sx={{ 
+                      p: 3, 
+                      display: 'inline-block',
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText'
+                    }}
+                  >
+                    <Typography variant="h2">
+                      {otherPlayers[1].playedCard}
+                    </Typography>
+                  </Paper>
+                ) : (
+                  <Paper 
+                    elevation={1} 
+                    sx={{ 
+                      p: 3, 
+                      display: 'inline-block',
+                      backgroundColor: 'grey.300'
+                    }}
+                  >
+                    <Typography variant="h2">
+                      ?
+                    </Typography>
+                  </Paper>
+                )}
+                <Typography variant='body1' sx={{ mt: 2 }}>
+                  現在のスコア：{otherPlayers[1]?.score || 0}
+                </Typography>
+              </Box>
+            </Card>
           </Box>
         </Box>
 
         {/* 中央：現在のスコアカード */}
-        <Box sx={{ textAlign: 'center', py: 2 }}>
+        <Box sx={{ textAlign: 'center', py:4, flexGrow: 1 }}>
           <Typography variant="h6" gutterBottom>
             現在のスコアカード
           </Typography>
@@ -201,9 +205,9 @@ export default function RevealOtherCards() {
           </Card>
         </Box>
 
-        {/* 次のラウンドボタン */}
-        {gameState.players.every(p => p.playedCard !== null) && (
-          <Box sx={{ textAlign: 'center', mt: 1 }}>
+        {/* 次のラウンドボタン用のスペース（常に確保） */}
+        <Box sx={{ textAlign: 'center', mt: 1, minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {gameState.players.every(p => p.playedCard !== null) && (
             <Button 
               variant="contained" 
               color="primary" 
@@ -212,10 +216,9 @@ export default function RevealOtherCards() {
             >
               次のラウンド
             </Button>
-          </Box>
-        )}
+          )}
+        </Box>
       </Box>
     </Container>
   );
 }
-                  
