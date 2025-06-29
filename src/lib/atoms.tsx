@@ -63,6 +63,14 @@ const defaultPlayers: Player[] = [
     score: 0,
     isReady: false,
   },
+  {
+    id: 'player6',
+    name: 'CPU5',
+    cards: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    playedCard: null,
+    score: 0,
+    isReady: false,
+  },
 ];
 
 export const gameStateAtom = atom<GameState>({
