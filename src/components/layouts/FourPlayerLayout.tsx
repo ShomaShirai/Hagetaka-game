@@ -14,7 +14,7 @@ export default function FourPlayerLayout({
     <>
       {/* 上部のプレイヤー */}
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Card sx={{ flexGrow: 1, minWidth: "20%", maxWidth: "40%" }}>
+        <Card sx={{ flexGrow: 1, maxWidth: "32%" }}>
           <Box sx={{ textAlign: 'center', py: 1 }}>
             <Typography variant="h6" component="div" gutterBottom>
               {otherPlayers[0]?.name || `プレイヤー${otherPlayers[0]?.id}`}

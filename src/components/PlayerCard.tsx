@@ -11,7 +11,7 @@ export default function PlayerCard({
   backgroundColor = 'primary.main' 
 }: PlayerCardProps) {
   return (
-    <Card sx={{ flexGrow: 1, minWidth: "30%", maxWidth: "40%" }}>
+    <Card sx={{ flexGrow: 1, maxWidth: "60%" }}>
       <Box sx={{ textAlign: 'center', py: 1 }}>
         <Typography variant="h6" component="div" gutterBottom>
           {player?.name || `プレイヤー${player?.id}`}

@@ -23,7 +23,7 @@ export default function ThreePlayerLayout({
       </Box>
       
       {/* 中央：現在のスコアカード */}
-      <Box sx={{ textAlign: 'center', py: 4, flexGrow: 1 }}>
+      <Box sx={{ textAlign: 'center', flex: 1 }}>
         <Typography variant="h6" gutterBottom>
           スコアカード
         </Typography>
@@ -31,7 +31,7 @@ export default function ThreePlayerLayout({
           <Paper 
             elevation={6} 
             sx={{ 
-              p: 1, 
+              p: 3, 
               display: 'inline-block',
               backgroundColor: currentScoreCard > 0 ? 'success.main' : 'error.main',
               color: currentScoreCard > 0 ? 'success.contrastText' : 'error.contrastText'
