@@ -71,42 +71,7 @@ export default function RevealOtherCards() {
       return <FivePlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
     } else if (otherPlayers.length === 5) {
       return <SixPlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
-    } else {
-      // 7人以上：グリッド配置
-      return (
-        <>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-            {otherPlayers.map((player, index) => (
-              <Box key={player.id} sx={{ display: 'flex', justifyContent: 'center', minWidth: '30%' }}>
-                <PlayerCard player={player} />
-              </Box>
-            ))}
-          </Box>
-          
-          {/* 中央：現在のスコアカード */}
-          <Box sx={{ textAlign: 'center', py: 4, flexGrow: 1 }}>
-            <Typography variant="h6" gutterBottom>
-              スコアカード
-            </Typography>
-            {gameState.currentScoreCard && (
-              <Paper 
-                elevation={6} 
-                sx={{ 
-                  p: 3, 
-                  display: 'inline-block',
-                  backgroundColor: gameState.currentScoreCard > 0 ? 'success.main' : 'error.main',
-                  color: gameState.currentScoreCard > 0 ? 'success.contrastText' : 'error.contrastText'
-                }}
-              >
-                <Typography variant="h2">
-                  {gameState.currentScoreCard}
-                </Typography>
-              </Paper>
-            )}
-          </Box>
-        </>
-      );
-    }
+    } 
   };
 
   return (
