@@ -62,9 +62,7 @@ export function calculateScore(players: any[], scoreCard: number): ScoreResult[]
             reason: `最高値${highestCard}が複数のため、次点${nextHighestCard}でスコア獲得`
           });
         }
-        // 次点も複数の場合は誰もスコアを獲得しない
       }
-      // 次点がいない場合は誰もスコアを獲得しない
     }
   } else {
     // マイナスのスコアカードの場合
@@ -114,4 +112,29 @@ export function updatePlayersScore(players: any[], scoreResults: ScoreResult[]):
     }
     return player;
   });
+}
+
+// 次のスコアカードを選択する関数（使用済みを除外）
+export function getNextScoreCard(scoreCards: number[], usedScoreCards: number[]): number | null {
+  const availableCards = scoreCards.filter(card => !usedScoreCards.includes(card));
+  
+  if (availableCards.length === 0) {
+    return null; // ゲーム終了
+  }
+  
+  const randomIndex = Math.floor(Math.random() * availableCards.length);
+  return availableCards[randomIndex];
+}
+
+// ゲームが終了したかどうかを判定する関数
+export function isGameFinished(scoreCards: number[], usedScoreCards: number[]): boolean {
+  return usedScoreCards.length >= scoreCards.length;
+}
+
+// 使用済みスコアカードリストに追加する関数
+export function addUsedScoreCard(usedCards: number[], newCard: number): number[] {
+  if (!usedCards.includes(newCard)) {
+    return [...usedCards, newCard];
+  }
+  return usedCards;
 }

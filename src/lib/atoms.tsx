@@ -15,6 +15,7 @@ export interface GameState {
   players: Player[];
   currentRound: number;
   scoreCards: number[];
+  usedScoreCards: number[]; // 追加
   currentScoreCard: number | null;
   carryOverCards: number[];
   phase: 'waiting' | 'selecting' | 'revealing' | 'finished';
@@ -78,6 +79,7 @@ export const gameStateAtom = atom<GameState>({
   players: defaultPlayers,
   currentRound: 1,
   scoreCards: createScoreCards(),
+  usedScoreCards: [], // 追加
   currentScoreCard: 5, // 初期値として5を設定
   carryOverCards: [],
   phase: 'selecting',

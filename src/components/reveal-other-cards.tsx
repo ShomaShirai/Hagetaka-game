@@ -11,12 +11,11 @@ import {
 } from '@mui/material';
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/atoms';
-import { calculateScore, updatePlayersScore } from '@/lib/game-logic';
+import { calculateScore, updatePlayersScore, getNextScoreCard, addUsedScoreCard, isGameFinished } from '@/lib/game-logic';
 import ThreePlayerLayout from './layouts/ThreePlayerLayout';
 import FourPlayerLayout from './layouts/FourPlayerLayout';
 import FivePlayerLayout from './layouts/FivePlayerLayout';
 import SixPlayerLayout from './layouts/SixPlayerLayout';
-import PlayerCard from './PlayerCard';
 
 export default function RevealOtherCards() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
@@ -55,11 +54,21 @@ export default function RevealOtherCards() {
       const scoreResults = calculateScore(gameState.players, gameState.currentScoreCard);
       const updatedPlayers = updatePlayersScore(gameState.players, scoreResults);
       
+      // 使用済みスコアカードに追加
+      const newUsedScoreCards = addUsedScoreCard(gameState.usedScoreCards, gameState.currentScoreCard);
+      
+      // 次のスコアカードを取得
+      const nextScoreCard = getNextScoreCard(gameState.scoreCards, newUsedScoreCards);
+      
+      // ゲーム終了判定
+      const gameFinished = isGameFinished(gameState.scoreCards, newUsedScoreCards);
+      
       setGameState(prev => ({
         ...prev,
-        phase: 'selecting',
+        phase: gameFinished ? 'finished' : 'selecting',
         currentRound: prev.currentRound + 1,
-        currentScoreCard: prev.scoreCards[Math.floor(Math.random() * prev.scoreCards.length)],
+        usedScoreCards: newUsedScoreCards,
+        currentScoreCard: nextScoreCard,
         players: updatedPlayers.map(player => ({
           ...player,
           playedCard: null

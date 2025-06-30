@@ -75,20 +75,39 @@ export default function SelectNumber() {
           />
           <CardContent>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-              {scoreCards.map((card) => (
-                <Chip
-                  key={card}
-                  label={card}
-                  variant="outlined"
-                  sx={{
-                    fontSize: '1rem',
-                    padding: '8px',
-                    backgroundColor: card > 0 ? 'success.light' : 'error.light',
-                    color: card > 0 ? 'success.contrastText' : 'error.contrastText',
-                    fontWeight: 'bold'
-                  }}
-                />
-              ))}
+              {scoreCards.map((card) => {
+                const isUsed = gameState.usedScoreCards.includes(card);
+                const isCurrent = gameState.currentScoreCard === card;
+                
+                return (
+                  <Chip
+                    key={card}
+                    label={card}
+                    variant={isUsed ? "filled" : "outlined"}
+                    sx={{
+                      fontSize: '1rem',
+                      padding: '8px',
+                      backgroundColor: isCurrent 
+                        ? 'warning.main'
+                        : isUsed 
+                          ? 'grey.400' 
+                          : card > 0 
+                            ? 'success.light' 
+                            : 'error.light',
+                      color: isCurrent
+                        ? 'warning.contrastText'
+                        : isUsed
+                          ? 'grey.600'
+                          : card > 0 
+                            ? 'success.contrastText' 
+                            : 'error.contrastText',
+                      fontWeight: 'bold',
+                      opacity: isUsed ? 0.5 : 1,
+                      textDecoration: isUsed ? 'line-through' : 'none'
+                    }}
+                  />
+                );
+              })}
             </Box>
           </CardContent>
         </Card>
