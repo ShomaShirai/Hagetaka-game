@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/atoms';
+import { calculateScore, updatePlayersScore } from '@/lib/game-logic';
 import ThreePlayerLayout from './layouts/ThreePlayerLayout';
 import FourPlayerLayout from './layouts/FourPlayerLayout';
 import FivePlayerLayout from './layouts/FivePlayerLayout';
@@ -19,7 +20,7 @@ import PlayerCard from './PlayerCard';
 
 export default function RevealOtherCards() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
-  const [currentPlayer] = useAtom(currentPlayerAtom);
+  const [currentPlayer, setCurrentPlayer] = useAtom(currentPlayerAtom);
 
   // CPUプレイヤーにランダムなカードをプレイさせる
   useEffect(() => {
@@ -49,16 +50,28 @@ export default function RevealOtherCards() {
   const otherPlayers = gameState.players.filter(p => p.id !== currentPlayer?.id);
   
   const handleNextRound = () => {
-    setGameState(prev => ({
-      ...prev,
-      phase: 'selecting',
-      currentRound: prev.currentRound + 1,
-      currentScoreCard: prev.scoreCards[Math.floor(Math.random() * prev.scoreCards.length)],
-      players: prev.players.map(player => ({
-        ...player,
-        playedCard: null
-      }))
-    }));
+    // スコア計算を実行
+    if (gameState.currentScoreCard) {
+      const scoreResults = calculateScore(gameState.players, gameState.currentScoreCard);
+      const updatedPlayers = updatePlayersScore(gameState.players, scoreResults);
+      
+      setGameState(prev => ({
+        ...prev,
+        phase: 'selecting',
+        currentRound: prev.currentRound + 1,
+        currentScoreCard: prev.scoreCards[Math.floor(Math.random() * prev.scoreCards.length)],
+        players: updatedPlayers.map(player => ({
+          ...player,
+          playedCard: null
+        }))
+      }));
+      
+      // 現在のプレイヤーの情報も更新
+      const updatedCurrentPlayer = updatedPlayers.find(p => p.id === currentPlayer?.id);
+      if (updatedCurrentPlayer) {
+        setCurrentPlayer(updatedCurrentPlayer);
+      }
+    }
   };
 
   // プレイヤー数に応じたレイアウト決定

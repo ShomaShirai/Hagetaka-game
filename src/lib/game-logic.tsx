@@ -15,3 +15,103 @@ export function createScoreCards(): number[] {
 export function createUserCards(): number[] {
   return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 }
+
+// スコア計算の結果を表す型
+export interface ScoreResult {
+  playerId: string;
+  scoreChange: number;
+  reason: string;
+}
+
+// スコア計算を行う関数
+export function calculateScore(players: any[], scoreCard: number): ScoreResult[] {
+  const playedCards = players
+    .filter(player => player.playedCard !== null)
+    .map(player => ({
+      playerId: player.id,
+      playerName: player.name,
+      card: player.playedCard
+    }))
+    .sort((a, b) => b.card - a.card); // 降順でソート
+
+  const results: ScoreResult[] = [];
+
+  if (scoreCard > 0) {
+    // プラスのスコアカードの場合
+    const highestCard = playedCards[0].card;
+    const highestPlayers = playedCards.filter(p => p.card === highestCard);
+
+    if (highestPlayers.length === 1) {
+      // 最高値が一人だけの場合、その人がスコアを獲得
+      results.push({
+        playerId: highestPlayers[0].playerId,
+        scoreChange: scoreCard,
+        reason: `最高値${highestCard}でスコア獲得`
+      });
+    } else {
+      // 最高値が複数人の場合、次に高い値を出した一人がスコアを獲得
+      const nextHighestPlayers = playedCards.filter(p => p.card < highestCard);
+      if (nextHighestPlayers.length > 0) {
+        const nextHighestCard = nextHighestPlayers[0].card;
+        const nextHighestUniquePlayers = nextHighestPlayers.filter(p => p.card === nextHighestCard);
+        
+        if (nextHighestUniquePlayers.length === 1) {
+          results.push({
+            playerId: nextHighestUniquePlayers[0].playerId,
+            scoreChange: scoreCard,
+            reason: `最高値${highestCard}が複数のため、次点${nextHighestCard}でスコア獲得`
+          });
+        }
+        // 次点も複数の場合は誰もスコアを獲得しない
+      }
+      // 次点がいない場合は誰もスコアを獲得しない
+    }
+  } else {
+    // マイナスのスコアカードの場合
+    const sortedAscending = [...playedCards].sort((a, b) => a.card - b.card); // 昇順でソート
+    const lowestCard = sortedAscending[0].card;
+    const lowestPlayers = sortedAscending.filter(p => p.card === lowestCard);
+
+    if (lowestPlayers.length === 1) {
+      // 最低値が一人だけの場合、その人がマイナススコアを受ける
+      results.push({
+        playerId: lowestPlayers[0].playerId,
+        scoreChange: scoreCard, // scoreCardは既にマイナス値
+        reason: `最低値${lowestCard}でマイナススコア`
+      });
+    } else {
+      // 最低値が複数人の場合、次に低い値を出した一人がマイナススコアを受ける
+      const nextLowestPlayers = sortedAscending.filter(p => p.card > lowestCard);
+      if (nextLowestPlayers.length > 0) {
+        const nextLowestCard = nextLowestPlayers[0].card;
+        const nextLowestUniquePlayers = nextLowestPlayers.filter(p => p.card === nextLowestCard);
+        
+        if (nextLowestUniquePlayers.length === 1) {
+          results.push({
+            playerId: nextLowestUniquePlayers[0].playerId,
+            scoreChange: scoreCard, // scoreCardは既にマイナス値
+            reason: `最低値${lowestCard}が複数のため、次点${nextLowestCard}でマイナススコア`
+          });
+        }
+        // 次点も複数の場合は誰もマイナススコアを受けない
+      }
+      // 次点がいない場合は誰もマイナススコアを受けない
+    }
+  }
+
+  return results;
+}
+
+// プレイヤーのスコアを更新する関数
+export function updatePlayersScore(players: any[], scoreResults: ScoreResult[]): any[] {
+  return players.map(player => {
+    const scoreResult = scoreResults.find(result => result.playerId === player.id);
+    if (scoreResult) {
+      return {
+        ...player,
+        score: player.score + scoreResult.scoreChange
+      };
+    }
+    return player;
+  });
+}
