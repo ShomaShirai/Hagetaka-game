@@ -30,7 +30,10 @@ export default function SelectNumber() {
   );
 
   const handleCardSelect = (cardNumber: number) => {
-    setSelectedCard(cardNumber);
+    // 使用可能なカードのみ選択可能
+    if (availableCards.includes(cardNumber)) {
+      setSelectedCard(cardNumber);
+    }
   };
 
   const handleConfirm = () => {
@@ -143,21 +146,46 @@ export default function SelectNumber() {
           />
           <CardContent>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mb: 2 }}>
-              {availableCards.map((card) => (
-                <Button
-                  key={card}
-                  variant={selectedCard === card ? "contained" : "outlined"}
-                  onClick={() => handleCardSelect(card)}
-                  sx={{
-                    minWidth: '50px',
-                    height: '50px',
-                    fontSize: '1.1rem',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {card}
-                </Button>
-              ))}
+              {userCards.map((card) => {
+                const isAvailable = availableCards.includes(card);
+                const isSelected = selectedCard === card;
+                
+                return (
+                  <Button
+                    key={card}
+                    variant={isSelected ? "contained" : "outlined"}
+                    onClick={() => handleCardSelect(card)}
+                    disabled={!isAvailable}
+                    sx={{
+                      minWidth: '50px',
+                      height: '50px',
+                      fontSize: '1.1rem',
+                      fontWeight: 'bold',
+                      opacity: isAvailable ? 1 : 0.3,
+                      backgroundColor: isSelected 
+                        ? 'primary.main' 
+                        : isAvailable 
+                          ? 'transparent' 
+                          : 'grey.200',
+                      color: isSelected 
+                        ? 'primary.contrastText' 
+                        : isAvailable 
+                          ? 'inherit' 
+                          : 'grey.500',
+                      textDecoration: !isAvailable ? 'line-through' : 'none',
+                      '&:hover': {
+                        backgroundColor: isAvailable 
+                          ? isSelected 
+                            ? 'primary.dark' 
+                            : 'action.hover' 
+                          : 'grey.200'
+                      }
+                    }}
+                  >
+                    {card}
+                  </Button>
+                );
+              })}
             </Box>
             
             {selectedCard && (
