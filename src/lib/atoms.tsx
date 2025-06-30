@@ -22,6 +22,14 @@ export interface GameState {
   winner: string | null;
 }
 
+export interface Room {
+  id: string;
+  room_code: string;
+  host_id: string;
+  players: Player[];
+  createdAt?: Date; // オプションで作成日時を追加
+}
+
 // デフォルトプレイヤーを作成
 const defaultPlayers: Player[] = [
   {
