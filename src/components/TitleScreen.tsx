@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Box,
-  Card,
-  CardContent,
   Typography,
-  TextField,
-  Button,
-  Paper,
-  Fade,
+  Snackbar,
   Alert
 } from '@mui/material';
-import { PersonAdd, Login, ContentCopy } from '@mui/icons-material';
+import InitialScreen from './InitialScreen';
+import WaitingScreen from './WaitingScreen';
+import { createRoom, joinRoom, subscribeToRoom, Room } from '../firebase/db_handler';
 
 type ScreenMode = 'initial' | 'waiting' | 'joining';
 
@@ -24,6 +21,9 @@ export default function TitleScreen() {
   const [screenMode, setScreenMode] = useState<ScreenMode>('initial');
   const [nameError, setNameError] = useState('');
   const [roomCodeError, setRoomCodeError] = useState('');
+  const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' as 'success' | 'error' | 'info' });
+  const [loading, setLoading] = useState(false);
 
   // 6桁のランダムなルームコードを生成
   const generateRoomCode = () => {
@@ -43,15 +43,29 @@ export default function TitleScreen() {
     return true;
   };
 
-  const handleCreateRoom = () => {
-    if (!validateName(playerName)) return;
-    
-    const newRoomCode = generateRoomCode();
-    setRoomCode(newRoomCode);
-    setScreenMode('waiting');
+  const showSnackbar = (message: string, severity: 'success' | 'error' | 'info') => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  const handleJoinRoom = () => {
+  const handleCreateRoom = async () => {
+    if (!validateName(playerName)) return;
+    
+    setLoading(true);
+    try {
+      const newRoomCode = generateRoomCode();
+      await createRoom(newRoomCode, playerName.trim());
+      setRoomCode(newRoomCode);
+      setScreenMode('waiting');
+      showSnackbar('ルームを作成しました', 'success');
+    } catch (error) {
+      console.error('ルーム作成エラー:', error);
+      showSnackbar('ルームの作成に失敗しました', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinRoom = async () => {
     if (!validateName(playerName)) return;
     
     if (!joinRoomCode.trim()) {
@@ -65,12 +79,24 @@ export default function TitleScreen() {
     }
     
     setRoomCodeError('');
-    // TODO: ルーム参加のロジック
-    console.log(`プレイヤー ${playerName} がルーム ${joinRoomCode} に参加`);
+    setLoading(true);
+    
+    try {
+      await joinRoom(joinRoomCode, playerName.trim());
+      setRoomCode(joinRoomCode);
+      setScreenMode('waiting');
+      showSnackbar('ルームに参加しました', 'success');
+    } catch (error: any) {
+      console.error('ルーム参加エラー:', error);
+      showSnackbar(error.message || 'ルームへの参加に失敗しました', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copyRoomCode = () => {
     navigator.clipboard.writeText(roomCode);
+    showSnackbar('ルームコードをコピーしました', 'success');
   };
 
   const resetToInitial = () => {
@@ -80,7 +106,31 @@ export default function TitleScreen() {
     setRoomCode('');
     setNameError('');
     setRoomCodeError('');
+    setCurrentRoom(null);
   };
+
+  const handleNameChange = (name: string) => {
+    if (nameError) validateName(name);
+  };
+
+  const handleRoomCodeChange = (code: string) => {
+    if (roomCodeError) setRoomCodeError('');
+  };
+
+  // ルームの状態を監視
+  useEffect(() => {
+    if (roomCode && screenMode === 'waiting') {
+      const unsubscribe = subscribeToRoom(roomCode, (room) => {
+        setCurrentRoom(room);
+        if (!room) {
+          showSnackbar('ルームが削除されました', 'error');
+          resetToInitial();
+        }
+      });
+
+      return () => unsubscribe();
+    }
+  }, [roomCode, screenMode]);
 
   return (
     <Container maxWidth="sm" sx={{ height: '100vh', py: 2, background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)' }}>
@@ -100,146 +150,45 @@ export default function TitleScreen() {
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
           
           {screenMode === 'initial' && (
-            <Fade in timeout={500}>
-              <Card sx={{ width: '100%', boxShadow: 4 }}>
-                <CardContent sx={{ p: 4 }}>
-                  <Typography variant="h5" component="h2" sx={{ mb: 3, textAlign: 'center', fontWeight: 'bold' }}>
-                    ゲームに参加
-                  </Typography>
-                  
-                  {/* 名前入力 */}
-                  <TextField
-                    fullWidth
-                    label="プレイヤー名"
-                    variant="outlined"
-                    value={playerName}
-                    onChange={(e) => {
-                      setPlayerName(e.target.value);
-                      if (nameError) validateName(e.target.value);
-                    }}
-                    error={!!nameError}
-                    helperText={nameError}
-                    sx={{ mb: 3 }}
-                    placeholder="ニックネームを入力してください"
-                  />
-
-                  {/* チーム参加の場合のルームコード入力 */}
-                  {screenMode === 'initial' && (
-                    <TextField
-                      fullWidth
-                      label="ルームコード（参加する場合）"
-                      variant="outlined"
-                      value={joinRoomCode}
-                      onChange={(e) => {
-                        setJoinRoomCode(e.target.value);
-                        if (roomCodeError) setRoomCodeError('');
-                      }}
-                      error={!!roomCodeError}
-                      helperText={roomCodeError}
-                      sx={{ mb: 3 }}
-                      placeholder="6桁の数字を入力"
-                      inputProps={{ maxLength: 6 }}
-                    />
-                  )}
-
-                  {/* ボタン */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      startIcon={<PersonAdd />}
-                      onClick={handleCreateRoom}
-                      sx={{ py: 1.5, fontSize: '1.1rem' }}
-                    >
-                      新しいルームを作成
-                    </Button>
-                    
-                    <Button
-                      variant="outlined"
-                      size="large"
-                      startIcon={<Login />}
-                      onClick={handleJoinRoom}
-                      sx={{ py: 1.5, fontSize: '1.1rem' }}
-                    >
-                      ルームに参加
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Fade>
+            <InitialScreen
+              playerName={playerName}
+              setPlayerName={setPlayerName}
+              joinRoomCode={joinRoomCode}
+              setJoinRoomCode={setJoinRoomCode}
+              nameError={nameError}
+              roomCodeError={roomCodeError}
+              onCreateRoom={handleCreateRoom}
+              onJoinRoom={handleJoinRoom}
+              onNameChange={handleNameChange}
+              onRoomCodeChange={handleRoomCodeChange}
+              loading={loading}
+            />
           )}
 
-          {screenMode === 'waiting' && (
-            <Fade in timeout={500}>
-              <Card sx={{ width: '100%', boxShadow: 4 }}>
-                <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                  <Typography variant="h5" component="h2" sx={{ mb: 2, fontWeight: 'bold' }}>
-                    ルーム作成完了
-                  </Typography>
-                  
-                  <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
-                    プレイヤー: <strong>{playerName}</strong>
-                  </Typography>
-
-                  <Typography variant="h6" sx={{ mb: 2 }}>
-                    ルームコード
-                  </Typography>
-                  
-                  <Paper 
-                    elevation={3}
-                    sx={{ 
-                      p: 3, 
-                      mb: 3, 
-                      backgroundColor: 'warning.light',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <Typography variant="h3" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                      {roomCode}
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<ContentCopy />}
-                      onClick={copyRoomCode}
-                    >
-                      コピー
-                    </Button>
-                  </Paper>
-
-                  <Alert severity="info" sx={{ mb: 3 }}>
-                    このコードを他のプレイヤーに教えて、ルームに参加してもらいましょう
-                  </Alert>
-
-                  <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-                    参加者を待っています...
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button
-                      variant="outlined"
-                      onClick={resetToInitial}
-                      sx={{ flex: 1 }}
-                    >
-                      戻る
-                    </Button>
-                    <Button
-                      variant="contained"
-                      sx={{ flex: 1 }}
-                      disabled // TODO: 参加者が揃ったら有効化
-                    >
-                      ゲーム開始
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Fade>
+          {screenMode === 'waiting' && currentRoom && (
+            <WaitingScreen
+              playerName={playerName}
+              roomCode={roomCode}
+              currentRoom={currentRoom}
+              onCopyRoomCode={copyRoomCode}
+              onBack={resetToInitial}
+            />
           )}
 
         </Box>
       </Box>
+
+      {/* スナックバー */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
