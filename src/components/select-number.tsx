@@ -10,24 +10,35 @@ import {
   Box,
   Paper,
   Container,
-  Chip
+  Chip,
+  Alert
 } from '@mui/material';
 import { useAtom } from 'jotai';
-import { gameStateAtom, currentPlayerAtom } from '@/lib/atoms';
-import { createScoreCards, createUserCards } from '@/lib/game-logic';
+import { gameStateAtom } from '@/lib/game-atoms';
+import { submitPlayerMove } from '@/firebase/db_handler';
 
 export default function SelectNumber() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
-  const [currentPlayer, setCurrentPlayer] = useAtom(currentPlayerAtom);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const scoreCards = createScoreCards();
-  const userCards = createUserCards();
+  // 現在のプレイヤーを取得
+  const currentPlayer = gameState.players.find(p => p.name === gameState.currentPlayerName);
   
+  if (!currentPlayer || !gameState.room) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error">
+          プレイヤー情報が見つかりません。
+        </Alert>
+      </Container>
+    );
+  }
+
   // 使用可能なカード（まだ使用していないカード）
-  const availableCards = userCards.filter(card => 
-    currentPlayer?.cards.includes(card)
-  );
+  const availableCards = currentPlayer.cards;
+  const userCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const scoreCards = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   const handleCardSelect = (cardNumber: number) => {
     // 使用可能なカードのみ選択可能
@@ -36,24 +47,33 @@ export default function SelectNumber() {
     }
   };
 
-  const handleConfirm = () => {
-    if (selectedCard && currentPlayer) {
-      // プレイヤーのプレイしたカードを更新し、手札から削除
-      const updatedPlayer = { 
-        ...currentPlayer, 
-        playedCard: selectedCard,
-        cards: currentPlayer.cards.filter(card => card !== selectedCard)
-      };
-      setCurrentPlayer(updatedPlayer);
+  const handleConfirm = async () => {
+    if (!selectedCard || !gameState.roomCode || !gameState.currentPlayerName) return;
+    
+    setIsSubmitting(true);
+    try {
+      await submitPlayerMove(gameState.roomCode, gameState.currentPlayerName, selectedCard);
       
-      // ゲーム状態を更新
+      // ローカル状態を更新
       setGameState(prev => ({
         ...prev,
-        phase: 'revealing' as const,
-        players: prev.players.map(p => 
-          p.id === currentPlayer.id ? updatedPlayer : p
+        players: prev.players.map(player => 
+          player.name === gameState.currentPlayerName
+            ? { 
+                ...player, 
+                playedCard: selectedCard,
+                cards: player.cards.filter(card => card !== selectedCard)
+              }
+            : player
         )
       }));
+
+      setSelectedCard(null);
+    } catch (error: any) {
+      console.error('カード送信エラー:', error);
+      alert(error.message || 'カードの送信に失敗しました');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -188,24 +208,32 @@ export default function SelectNumber() {
               })}
             </Box>
             
-            {selectedCard && (
-              <Box sx={{ textAlign: 'center', mt: 4 }}>
-                <Typography variant="body1" gutterBottom>
-                  選択したカード: <strong>{selectedCard}</strong>
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  size="large"
-                  onClick={handleConfirm}
-                  sx={{ mt: 1 }}
-                >
-                  決定
-                </Button>
-              </Box>
-            )}
+            {/* 確認ボタン */}
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleConfirm}
+                disabled={!selectedCard || isSubmitting}
+                sx={{
+                  fontSize: '1.2rem',
+                  fontWeight: 'bold',
+                  px: 4,
+                  py: 1.5
+                }}
+              >
+                {isSubmitting ? '送信中...' : selectedCard ? `${selectedCard} を選択` : 'カードを選択してください'}
+              </Button>
+            </Box>
           </CardContent>
         </Card>
+
+        {/* プレイヤー情報 */}
+        <Paper sx={{ p: 2, textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary">
+            プレイヤー: {currentPlayer.name} | ラウンド: {gameState.currentRound} | 残りカード: {availableCards.length}
+          </Typography>
+        </Paper>
       </Box>
     </Container>
   );

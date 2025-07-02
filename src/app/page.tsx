@@ -1,28 +1,27 @@
 'use client';
 
 import { Provider, useAtom } from 'jotai'
-import { gameStateAtom } from '@/lib/atoms'
-import SelectNumber from '@/components/select-number'
-import RevealOtherCards from '@/components/reveal-other-cards'
-import TitleScreen from '@/components/TitleScreen';
+import { appScreenAtom } from '@/lib/game-atoms'
+import TitleScreen from '@/components/TitleScreen'
+import GameScreen from '@/components/GameScreen'
 
-function GameContent() {
-  const [gameState] = useAtom(gameStateAtom);
+function AppContent() {
+  const [currentScreen] = useAtom(appScreenAtom);
 
-  switch (gameState.phase) {
-    case 'selecting':
-      return <SelectNumber />;
-    case 'revealing':
-      return <RevealOtherCards />;
+  switch (currentScreen) {
+    case 'title':
+      return <TitleScreen />;
+    case 'game':
+      return <GameScreen />;
     default:
-      return <SelectNumber />;
+      return <TitleScreen />;
   }
 }
 
 export default function Home() {
   return (
     <Provider>
-      <GameContent />
+      <AppContent />
     </Provider>
   ) 
 }

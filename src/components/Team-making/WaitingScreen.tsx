@@ -22,6 +22,8 @@ interface WaitingScreenProps {
   currentRoom: Room;
   onCopyRoomCode: () => void;
   onStartGame: () => void;
+  onBackToInitial?: () => void;
+  loading?: boolean;
 }
 
 export default function WaitingScreen({
@@ -29,7 +31,9 @@ export default function WaitingScreen({
   roomCode,
   currentRoom,
   onCopyRoomCode,
-  onStartGame
+  onStartGame,
+  onBackToInitial,
+  loading = false
 }: WaitingScreenProps) {
   const isHost = currentRoom.hostName === playerName;
   const canStartGame = currentRoom.players.length >= 2; // 最低2人でゲーム開始可能
@@ -105,18 +109,20 @@ export default function WaitingScreen({
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
-              onClick={onStartGame}
+              onClick={onBackToInitial || (() => {})}
               sx={{ flex: 1 }}
+              disabled={loading}
             >
               戻る
             </Button>
             {isHost && (
               <Button
                 variant="contained"
+                onClick={onStartGame}
                 sx={{ flex: 1 }}
-                disabled={!canStartGame}
+                disabled={!canStartGame || loading}
               >
-                ゲーム開始 {!canStartGame && '(2人以上必要)'}
+                {loading ? 'ゲーム開始中...' : `ゲーム開始 ${!canStartGame ? '(2人以上必要)' : ''}`}
               </Button>
             )}
           </Box>

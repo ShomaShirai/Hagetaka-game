@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAtom } from 'jotai';
 import {
   Container,
   Box,
@@ -10,11 +11,14 @@ import {
 } from '@mui/material';
 import InitialScreen from './Team-making/InitialScreen';
 import WaitingScreen from './Team-making/WaitingScreen';
-import { createRoom, joinRoom, subscribeToRoom, Room } from '../firebase/db_handler';
+import { createRoom, joinRoom, subscribeToRoom, startGameAsHost, Room } from '../firebase/db_handler';
+import { appScreenAtom, gameStateAtom, updateGameStateFromRoom } from '@/lib/game-atoms';
 
 type ScreenMode = 'initial' | 'waiting' | 'joining';
 
 export default function TitleScreen() {
+  const [appScreen, setAppScreen] = useAtom(appScreenAtom);
+  const [gameState, setGameState] = useAtom(gameStateAtom);
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [joinRoomCode, setJoinRoomCode] = useState('');
@@ -65,9 +69,43 @@ export default function TitleScreen() {
     }
   };
 
-  const handleStartGame = () => {
-    if (!currentRoom) return;
-  }
+  const handleStartGame = async () => {
+    if (!currentRoom || !playerName) return;
+    
+    try {
+      setLoading(true);
+      await startGameAsHost(currentRoom.id, playerName);
+      
+      // ゲーム状態を初期化してゲーム画面に遷移
+      const updatedGameState = updateGameStateFromRoom(
+        {
+          roomCode: currentRoom.id,
+          currentPlayerName: playerName,
+          isHost: true,
+          players: [],
+          currentRound: 1,
+          scoreCards: [],
+          usedScoreCards: [],
+          currentScoreCard: null,
+          carryOverCards: [],
+          phase: 'selecting',
+          winner: null,
+          room: currentRoom,
+        },
+        currentRoom,
+        playerName
+      );
+      
+      setGameState(updatedGameState);
+      setAppScreen('game');
+      
+    } catch (error: any) {
+      console.error('ゲーム開始エラー:', error);
+      showSnackbar(error.message || 'ゲームの開始に失敗しました', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleJoinRoom = async () => {
     if (!validateName(playerName)) return;
@@ -176,7 +214,9 @@ export default function TitleScreen() {
               roomCode={roomCode}
               currentRoom={currentRoom}
               onCopyRoomCode={copyRoomCode}
-              onStartGame={resetToInitial}
+              onStartGame={handleStartGame}
+              onBackToInitial={resetToInitial}
+              loading={loading}
             />
           )}
 

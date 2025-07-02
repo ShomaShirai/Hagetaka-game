@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, serverTimestamp, arrayUnion } from "firebase/firestore";
 
 // Firebase Web SDKの設定
 const firebaseConfig = {
@@ -26,6 +26,14 @@ export interface Room {
   createdAt: any;
   gameStartedAt?: any; // ゲーム開始時刻（オプショナル）
   maxPlayers: number;
+  // ゲーム状態
+  currentRound?: number;
+  currentScoreCard?: number | null;
+  scoreCards?: number[];
+  usedScoreCards?: number[];
+  carryOverCards?: number[];
+  playerMoves?: { [playerId: string]: number }; // プレイヤーの手札選択
+  roundResults?: any[]; // ラウンド結果の履歴
 }
 
 // ルームを作成
@@ -150,8 +158,8 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
       throw new Error('ゲームは既に開始されているか、終了しています');
     }
     
-    if (roomData.players.length < 3) {
-      throw new Error('ゲームを開始するには最低3人のプレイヤーが必要です');
+    if (roomData.players.length < 2) {
+      throw new Error('ゲームを開始するには最低2人のプレイヤーが必要です');
     }
     
     if (roomData.players.length > 6) {
@@ -163,6 +171,9 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
       status: 'playing',
       gameStartedAt: serverTimestamp()
     });
+    
+    // ゲーム状態を初期化
+    await initializeGameState(roomCode);
     
     console.log(`Game started by host ${playerName} for room: ${roomCode}`);
   } catch (error) {
@@ -203,6 +214,121 @@ export const isHost = async (roomCode: string, playerName: string): Promise<bool
   } catch (error) {
     console.error('Error checking host status:', error);
     return false;
+  }
+};
+
+// ゲーム状態を初期化
+export const initializeGameState = async (roomCode: string): Promise<void> => {
+  try {
+    const roomRef = doc(db, 'rooms', roomCode);
+    const scoreCards = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const shuffledScoreCards = [...scoreCards].sort(() => Math.random() - 0.5);
+    
+    await updateDoc(roomRef, {
+      currentRound: 1,
+      currentScoreCard: shuffledScoreCards[0],
+      scoreCards: shuffledScoreCards,
+      usedScoreCards: [],
+      carryOverCards: [],
+      playerMoves: {},
+      roundResults: []
+    });
+    
+    console.log('Game state initialized for room:', roomCode);
+  } catch (error) {
+    console.error('Error initializing game state:', error);
+    throw error;
+  }
+};
+
+// プレイヤーの手札選択を送信
+export const submitPlayerMove = async (roomCode: string, playerName: string, cardValue: number): Promise<void> => {
+  try {
+    const roomRef = doc(db, 'rooms', roomCode);
+    const roomDoc = await getDoc(roomRef);
+    
+    if (!roomDoc.exists()) {
+      throw new Error('ルームが見つかりません');
+    }
+    
+    const roomData = roomDoc.data() as Room;
+    
+    if (roomData.status !== 'playing') {
+      throw new Error('ゲームが開始されていません');
+    }
+    
+    const currentMoves = roomData.playerMoves || {};
+    const updatedMoves = {
+      ...currentMoves,
+      [playerName]: cardValue
+    };
+    
+    await updateDoc(roomRef, {
+      playerMoves: updatedMoves
+    });
+    
+    console.log(`Player ${playerName} played card ${cardValue}`);
+    
+    // 全プレイヤーが選択したかチェック
+    if (Object.keys(updatedMoves).length === roomData.players.length) {
+      await processRoundResult(roomCode);
+    }
+  } catch (error) {
+    console.error('Error submitting player move:', error);
+    throw error;
+  }
+};
+
+// ラウンド結果を処理
+export const processRoundResult = async (roomCode: string): Promise<void> => {
+  try {
+    const roomRef = doc(db, 'rooms', roomCode);
+    const roomDoc = await getDoc(roomRef);
+    
+    if (!roomDoc.exists()) {
+      throw new Error('ルームが見つかりません');
+    }
+    
+    const roomData = roomDoc.data() as Room;
+    const currentMoves = roomData.playerMoves || {};
+    const currentScoreCard = roomData.currentScoreCard || 0;
+    
+    // ラウンド結果を計算
+    const roundResult = {
+      round: roomData.currentRound || 1,
+      scoreCard: currentScoreCard,
+      playerMoves: { ...currentMoves },
+      timestamp: serverTimestamp()
+    };
+    
+    // 結果を保存
+    const updatedResults = [...(roomData.roundResults || []), roundResult];
+    const updatedUsedScoreCards = [...(roomData.usedScoreCards || []), currentScoreCard];
+    
+    // 次のスコアカード
+    const remainingScoreCards = (roomData.scoreCards || []).filter(
+      card => !updatedUsedScoreCards.includes(card)
+    );
+    
+    const nextScoreCard = remainingScoreCards.length > 0 ? remainingScoreCards[0] : null;
+    const nextRound = (roomData.currentRound || 1) + 1;
+    
+    // ゲーム終了判定
+    const isGameFinished = remainingScoreCards.length === 0 || nextRound > 15;
+    
+    await updateDoc(roomRef, {
+      roundResults: updatedResults,
+      usedScoreCards: updatedUsedScoreCards,
+      currentScoreCard: nextScoreCard,
+      currentRound: nextRound,
+      playerMoves: {}, // 次のラウンドのためにリセット
+      status: isGameFinished ? 'finished' : 'playing'
+    });
+    
+    console.log(`Round ${roomData.currentRound} processed for room:`, roomCode);
+  } catch (error) {
+    console.error('Error processing round result:', error);
+    throw error;
   }
 };
 
