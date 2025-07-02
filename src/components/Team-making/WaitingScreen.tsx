@@ -14,14 +14,14 @@ import {
   Chip
 } from '@mui/material';
 import { ContentCopy, Person } from '@mui/icons-material';
-import { Room } from '../firebase/db_handler';
+import { Room } from '../../firebase/db_handler';
 
 interface WaitingScreenProps {
   playerName: string;
   roomCode: string;
   currentRoom: Room;
   onCopyRoomCode: () => void;
-  onBack: () => void;
+  onStartGame: () => void;
 }
 
 export default function WaitingScreen({
@@ -29,7 +29,7 @@ export default function WaitingScreen({
   roomCode,
   currentRoom,
   onCopyRoomCode,
-  onBack
+  onStartGame
 }: WaitingScreenProps) {
   const isHost = currentRoom.hostName === playerName;
   const canStartGame = currentRoom.players.length >= 2; // 最低2人でゲーム開始可能
@@ -105,7 +105,7 @@ export default function WaitingScreen({
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
               variant="outlined"
-              onClick={onBack}
+              onClick={onStartGame}
               sx={{ flex: 1 }}
             >
               戻る

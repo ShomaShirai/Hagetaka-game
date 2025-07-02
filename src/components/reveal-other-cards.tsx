@@ -12,6 +12,7 @@ import {
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/atoms';
 import { calculateScore, updatePlayersScore, getNextScoreCard, addUsedScoreCard, isGameFinished } from '@/lib/game-logic';
+import TwoPlayerLayout from './reveal-other-number/TwoPlayerLayout';
 import ThreePlayerLayout from './reveal-other-number/ThreePlayerLayout';
 import FourPlayerLayout from './reveal-other-number/FourPlayerLayout';
 import FivePlayerLayout from './reveal-other-number/FivePlayerLayout';
@@ -85,7 +86,9 @@ export default function RevealOtherCards() {
 
   // プレイヤー数に応じたレイアウト決定
   const renderPlayerLayout = () => {
-    if (otherPlayers.length === 2) {
+    if (otherPlayers.length === 1) {
+      return <TwoPlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
+    } else if (otherPlayers.length === 2) {
       return <ThreePlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
     } else if (otherPlayers.length === 3) {
       return <FourPlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;

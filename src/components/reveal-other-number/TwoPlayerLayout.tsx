@@ -2,23 +2,20 @@ import React from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import PlayerCard from './PlayerCard';
 
-interface ThreePlayerLayoutProps {
+interface TwoPlayerLayoutProps {
   otherPlayers: any[];
   currentScoreCard: number | null;
 }
 
-export default function ThreePlayerLayout({ 
+export default function TwoPlayerLayout({ 
   otherPlayers, 
   currentScoreCard 
-}: ThreePlayerLayoutProps) {
+}: TwoPlayerLayoutProps) {
   return (
     <>
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1, maxWidth: '60%' }}>
           <PlayerCard player={otherPlayers[0]} />
-        </Box>
-        <Box sx={{ display: 'flex', justifyContent: 'center', flex: 1 }}>
-          <PlayerCard player={otherPlayers[1]} />
         </Box>
       </Box>
       

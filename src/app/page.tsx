@@ -22,7 +22,7 @@ function GameContent() {
 export default function Home() {
   return (
     <Provider>
-      <TitleScreen />
+      <GameContent />
     </Provider>
   ) 
 }

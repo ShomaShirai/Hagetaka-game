@@ -8,8 +8,8 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
-import InitialScreen from './InitialScreen';
-import WaitingScreen from './WaitingScreen';
+import InitialScreen from './Team-making/InitialScreen';
+import WaitingScreen from './Team-making/WaitingScreen';
 import { createRoom, joinRoom, subscribeToRoom, Room } from '../firebase/db_handler';
 
 type ScreenMode = 'initial' | 'waiting' | 'joining';
@@ -65,6 +65,10 @@ export default function TitleScreen() {
     }
   };
 
+  const handleStartGame = () => {
+    if (!currentRoom) return;
+  }
+
   const handleJoinRoom = async () => {
     if (!validateName(playerName)) return;
     
@@ -98,6 +102,7 @@ export default function TitleScreen() {
     navigator.clipboard.writeText(roomCode);
     showSnackbar('ルームコードをコピーしました', 'success');
   };
+
 
   const resetToInitial = () => {
     setScreenMode('initial');
@@ -171,7 +176,7 @@ export default function TitleScreen() {
               roomCode={roomCode}
               currentRoom={currentRoom}
               onCopyRoomCode={copyRoomCode}
-              onBack={resetToInitial}
+              onStartGame={resetToInitial}
             />
           )}
 

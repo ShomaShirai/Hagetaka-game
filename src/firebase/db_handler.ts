@@ -24,6 +24,7 @@ export interface Room {
   players: string[];
   status: 'waiting' | 'playing' | 'finished';
   createdAt: any;
+  gameStartedAt?: any; // ゲーム開始時刻（オプショナル）
   maxPlayers: number;
 }
 
@@ -95,11 +96,114 @@ export const subscribeToRoom = (roomCode: string, callback: (room: Room | null) 
   });
 };
 
+// ゲームを開始
+export const startGame = async (roomCode: string): Promise<void> => {
+  try {
+    const roomRef = doc(db, 'rooms', roomCode);
+    const roomDoc = await getDoc(roomRef);
+    
+    if (!roomDoc.exists()) {
+      throw new Error('ルームが見つかりません');
+    }
+    
+    const roomData = roomDoc.data() as Room;
+    
+    if (roomData.status !== 'waiting') {
+      throw new Error('ゲームは既に開始されているか、終了しています');
+    }
+    
+    if (roomData.players.length < 2) {
+      throw new Error('ゲームを開始するには最低2人のプレイヤーが必要です');
+    }
+    
+    // ゲーム状態を'playing'に変更
+    await updateDoc(roomRef, { 
+      status: 'playing',
+      gameStartedAt: serverTimestamp()
+    });
+    
+    console.log('Game started for room:', roomCode);
+  } catch (error) {
+    console.error('Error starting game:', error);
+    throw error;
+  }
+};
+
+// ホストがゲームを開始（ホスト権限チェック付き）
+export const startGameAsHost = async (roomCode: string, playerName: string): Promise<void> => {
+  try {
+    const roomRef = doc(db, 'rooms', roomCode);
+    const roomDoc = await getDoc(roomRef);
+    
+    if (!roomDoc.exists()) {
+      throw new Error('ルームが見つかりません');
+    }
+    
+    const roomData = roomDoc.data() as Room;
+    
+    // ホスト権限チェック
+    if (roomData.hostName !== playerName) {
+      throw new Error('ゲームを開始できるのはホストのみです');
+    }
+    
+    if (roomData.status !== 'waiting') {
+      throw new Error('ゲームは既に開始されているか、終了しています');
+    }
+    
+    if (roomData.players.length < 3) {
+      throw new Error('ゲームを開始するには最低3人のプレイヤーが必要です');
+    }
+    
+    if (roomData.players.length > 6) {
+      throw new Error('ゲームに参加できるのは最大6人までです');
+    }
+    
+    // ゲーム状態を'playing'に変更
+    await updateDoc(roomRef, { 
+      status: 'playing',
+      gameStartedAt: serverTimestamp()
+    });
+    
+    console.log(`Game started by host ${playerName} for room: ${roomCode}`);
+  } catch (error) {
+    console.error('Error starting game as host:', error);
+    throw error;
+  }
+};
+
 // ルームが存在するかチェック
 export const checkRoomExists = async (roomCode: string): Promise<boolean> => {
   const roomRef = doc(db, 'rooms', roomCode);
   const roomDoc = await getDoc(roomRef);
   return roomDoc.exists();
+};
+
+// ゲームの状態を確認
+export const getGameStatus = async (roomCode: string): Promise<Room | null> => {
+  try {
+    const roomRef = doc(db, 'rooms', roomCode);
+    const roomDoc = await getDoc(roomRef);
+    
+    if (!roomDoc.exists()) {
+      return null;
+    }
+    
+    return roomDoc.data() as Room;
+  } catch (error) {
+    console.error('Error getting game status:', error);
+    throw error;
+  }
+};
+
+// プレイヤーがホストかどうかを確認
+export const isHost = async (roomCode: string, playerName: string): Promise<boolean> => {
+  try {
+    const roomData = await getGameStatus(roomCode);
+    return roomData?.hostName === playerName;
+  } catch (error) {
+    console.error('Error checking host status:', error);
+    return false;
+  }
 };
 
 export { db };
