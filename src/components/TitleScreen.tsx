@@ -151,7 +151,7 @@ export default function TitleScreen() {
         }
         
         // ゲーム開始時に画面遷移
-        if (room.phase === 'selecting') { // statusからphaseに変更
+        if (room.phase === 'selecting') {
           const updatedGameState = updateGameStateFromRoom(
             gameState,
             room,

@@ -21,8 +21,8 @@ const db = getFirestore(app);
 export interface Room {
   id: string;
   hostName: string;
-  players: string[];
-  phase: 'first' | 'waiting' | 'selecting' | 'revealing' | 'finished'; // statusからphaseに変更
+  players: { playerName: string, score?: number, phase?: string }[]; // プレイヤー情報をオブジェクトの配列に変更
+  phase: 'first' | 'waiting' | 'selecting' | 'revealing' | 'finished';
   createdAt: any;
   gameStartedAt?: any;
   lastUpdated?: any;
@@ -44,8 +44,8 @@ export const createRoom = async (roomCode: string, hostName: string): Promise<vo
     const roomData: Room = {
       id: roomCode,
       hostName,
-      players: [hostName],
-      phase: 'waiting', // statusからphaseに変更
+      players: [{ playerName: hostName, score: 0, phase: 'waiting' }], // 配列として初期化
+      phase: 'waiting',
       createdAt: serverTimestamp(),
       maxPlayers: 6
     };
@@ -70,7 +70,7 @@ export const joinRoom = async (roomCode: string, playerName: string): Promise<bo
     
     const roomData = roomDoc.data() as Room;
     
-    if (roomData.phase !== 'waiting') { // statusからphaseに変更
+    if (roomData.phase !== 'waiting') {
       throw new Error('このルームは既にゲームが開始されています');
     }
     
@@ -78,11 +78,12 @@ export const joinRoom = async (roomCode: string, playerName: string): Promise<bo
       throw new Error('ルームが満員です');
     }
     
-    if (roomData.players.includes(playerName)) {
+    // プレイヤー名の重複チェック
+    if (roomData.players.some(player => player.playerName === playerName)) {
       throw new Error('同じ名前のプレイヤーが既に参加しています');
     }
     
-    const updatedPlayers = [...roomData.players, playerName];
+    const updatedPlayers = [...roomData.players, { playerName, score: 0, phase: 'waiting' }];
     await updateDoc(roomRef, { players: updatedPlayers });
     console.log('Player joined successfully');
     
@@ -117,7 +118,7 @@ export const startGame = async (roomCode: string): Promise<void> => {
     
     const roomData = roomDoc.data() as Room;
     
-    if (roomData.phase !== 'waiting') { // statusからphaseに変更
+    if (roomData.phase !== 'waiting') {
       throw new Error('ゲームは既に開始されているか、終了しています');
     }
     
@@ -127,7 +128,7 @@ export const startGame = async (roomCode: string): Promise<void> => {
     
     // ゲーム状態を'selecting'に変更
     await updateDoc(roomRef, { 
-      phase: 'selecting', // statusからphaseに変更
+      phase: 'selecting',
       gameStartedAt: serverTimestamp()
     });
     
@@ -155,7 +156,7 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
       throw new Error('ゲームを開始できるのはホストのみです');
     }
     
-    if (roomData.phase !== 'waiting') { // statusからphaseに変更
+    if (roomData.phase !== 'waiting') {
       throw new Error('ゲームは既に開始されているか、終了しています');
     }
     
@@ -167,9 +168,16 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
       throw new Error('ゲームに参加できるのは最大6人までです');
     }
     
+    // 全プレイヤーのphaseを'selecting'に設定
+    const updatedPlayers = roomData.players.map(player => ({
+      ...player,
+      phase: 'selecting'
+    }));
+    
     // ゲーム状態を'selecting'に変更
     await updateDoc(roomRef, { 
-      phase: 'selecting', // statusからphaseに変更
+      phase: 'selecting',
+      players: updatedPlayers,
       gameStartedAt: serverTimestamp()
     });
     
@@ -254,7 +262,7 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
     
     const roomData = roomDoc.data() as Room;
     
-    if (roomData.phase !== 'selecting') { // statusからphaseに変更
+    if (roomData.phase !== 'selecting') {
       throw new Error('ゲームが開始されていません');
     }
     
@@ -264,16 +272,30 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
       [playerName]: cardValue
     };
     
+    // 該当プレイヤーのphaseを'revealing'に更新
+    const updatedPlayers = roomData.players.map(player => 
+      player.playerName === playerName 
+        ? { ...player, phase: 'revealing' }
+        : player
+    );
+    
+    // 全プレイヤーが'revealing'フェーズになったかチェック
+    const allPlayersRevealing = updatedPlayers.every(player => player.phase === 'revealing');
+    console.log(`All players revealing: ${allPlayersRevealing}`);
+    
     await updateDoc(roomRef, {
-      playerMoves: updatedMoves
+      playerMoves: updatedMoves,
+      players: updatedPlayers,
+      // 全員がrevealingになったら全体のphaseも更新
+      ...(allPlayersRevealing && { phase: 'revealing' })
     });
     
-    console.log(`Player ${playerName} played card ${cardValue}`);
+    console.log(`Player ${playerName} played card ${cardValue}, phase updated to revealing`);
     
-    // 全プレイヤーが選択したかチェック
-    if (Object.keys(updatedMoves).length === roomData.players.length) {
-      await processRoundResult(roomCode);
-    }
+    // // 全プレイヤーが選択したかチェック
+    // if (Object.keys(updatedMoves).length === roomData.players.length) {
+    //   await processRoundResult(roomCode);
+    // }
   } catch (error) {
     console.error('Error submitting player move:', error);
     throw error;
@@ -323,7 +345,7 @@ export const processRoundResult = async (roomCode: string): Promise<void> => {
       currentScoreCard: nextScoreCard,
       currentRound: nextRound,
       playerMoves: {},
-      phase: isGameFinished ? 'finished' : 'selecting', // statusからphaseに変更
+      phase: isGameFinished ? 'finished' : 'selecting',
       lastUpdated: serverTimestamp()
     });
     

@@ -87,7 +87,8 @@ export const updateGameStateFromRoom = (
   // 既存のプレイヤー情報を保持しつつ、新しい情報で更新
   const existingPlayersMap = new Map(currentState.players.map(p => [p.name, p]));
   
-  const players = room.players.map(playerName => {
+  const players = room.players.map(playerObj => {
+    const playerName = playerObj.playerName;
     const existingPlayer = existingPlayersMap.get(playerName);
     const roomMoves = room.playerMoves || {};
     
@@ -105,13 +106,13 @@ export const updateGameStateFromRoom = (
       name: playerName,
       cards: updatedCards,
       playedCard: playedCard || null,
-      score: existingPlayer?.score || 0,
+      score: playerObj.score || existingPlayer?.score || 0,
       isReady: existingPlayer?.isReady || false,
       isConnected: true,
     };
   });
 
-  // フェーズ判定ロジックを改善（より安定化）
+  // フェーズ判定ロジック（個人のphaseも考慮）
   let newPhase = currentState.phase;
   
   if (room.phase === 'waiting') {
@@ -119,18 +120,11 @@ export const updateGameStateFromRoom = (
   } else if (room.phase === 'finished') {
     newPhase = 'finished';
   } else if (room.phase === 'selecting') {
-    const totalMoves = Object.keys(room.playerMoves || {}).length;
-    const totalPlayers = room.players.length;
-    
-    // 全プレイヤーが選択完了かつ、現在selectingフェーズの場合のみrevealingに変更
-    if (totalMoves === totalPlayers && totalPlayers > 0) {
-      newPhase = 'revealing';
-    } else {
-      // 全員が選択していない場合はselectingを維持
-      newPhase = 'selecting';
-    }
+    newPhase = 'selecting';
+  } else if (room.phase === 'revealing') {
+    // 全体がrevealingフェーズの場合
+    newPhase = 'revealing';
   } else if (room.phase) {
-    // その他のフェーズは直接使用
     newPhase = room.phase;
   }
 

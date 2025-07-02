@@ -87,11 +87,11 @@ export default function WaitingScreen({
             </Typography>
             <Paper elevation={1} sx={{ maxHeight: 150, overflow: 'auto' }}>
               <List dense>
-                {currentRoom.players.map((player, index) => (
+                {currentRoom.players.map((playerObj, index) => (
                   <ListItem key={index}>
                     <ListItemText 
-                      primary={player}
-                      secondary={player === currentRoom.hostName ? 'ホスト' : 'プレイヤー'}
+                      primary={playerObj.playerName}
+                      secondary={playerObj.playerName === currentRoom.hostName ? 'ホスト' : 'プレイヤー'}
                     />
                   </ListItem>
                 ))}

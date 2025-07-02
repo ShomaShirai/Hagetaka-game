@@ -62,11 +62,22 @@ export default function SelectNumber() {
     if (!selectedCard || !gameState.roomCode || !gameState.currentPlayerName || isSubmitting) return;
     
     setIsSubmitting(true);
+    console.log("前のphase", gameState.phase);
     try {
       await submitPlayerMove(gameState.roomCode, gameState.currentPlayerName, selectedCard);
       
       // 成功した場合のみselectedCardをリセット
       setSelectedCard(null);
+      // ローカル状態更新：該当プレイヤーのphaseを'revealing'に変更
+      setGameState(prev => ({
+        ...prev,
+        players: prev.players.map(player => 
+          player.name === gameState.currentPlayerName 
+            ? { ...player, playedCard: selectedCard }
+            : player
+        ),
+      }));
+      console.log("後のphase", gameState.phase);
     } catch (error: any) {
       console.error('カード送信エラー:', error);
       alert(error.message || 'カードの送信に失敗しました');
