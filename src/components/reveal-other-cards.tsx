@@ -12,10 +12,10 @@ import {
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/atoms';
 import { calculateScore, updatePlayersScore, getNextScoreCard, addUsedScoreCard, isGameFinished } from '@/lib/game-logic';
-import ThreePlayerLayout from './layouts/ThreePlayerLayout';
-import FourPlayerLayout from './layouts/FourPlayerLayout';
-import FivePlayerLayout from './layouts/FivePlayerLayout';
-import SixPlayerLayout from './layouts/SixPlayerLayout';
+import ThreePlayerLayout from './reveal-other-number/ThreePlayerLayout';
+import FourPlayerLayout from './reveal-other-number/FourPlayerLayout';
+import FivePlayerLayout from './reveal-other-number/FivePlayerLayout';
+import SixPlayerLayout from './reveal-other-number/SixPlayerLayout';
 
 export default function RevealOtherCards() {
   const [gameState, setGameState] = useAtom(gameStateAtom);

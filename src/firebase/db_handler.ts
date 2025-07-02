@@ -12,25 +12,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// デバッグ用：設定が正しく読み込まれているか確認
-console.log('Firebase Config:', {
-  apiKey: firebaseConfig.apiKey ? '設定済み' : '未設定',
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
-  messagingSenderId: firebaseConfig.messagingSenderId,
-  appId: firebaseConfig.appId ? '設定済み' : '未設定'
-});
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
-
-// Firestore設定をより詳細にログ出力
-console.log('Firestore initialized with project:', firebaseConfig.projectId);
-console.log('Database instance:', db.app.name);
-
 
 // ルームの型定義
 export interface Room {
@@ -55,7 +40,6 @@ export const createRoom = async (roomCode: string, hostName: string): Promise<vo
       maxPlayers: 6
     };
     
-    console.log('Creating room:', roomCode, roomData);
     await setDoc(roomRef, roomData);
     console.log('Room created successfully');
   } catch (error) {
@@ -89,7 +73,6 @@ export const joinRoom = async (roomCode: string, playerName: string): Promise<bo
     }
     
     const updatedPlayers = [...roomData.players, playerName];
-    console.log('Joining room:', roomCode, 'Player:', playerName);
     await updateDoc(roomRef, { players: updatedPlayers });
     console.log('Player joined successfully');
     
@@ -117,29 +100,6 @@ export const checkRoomExists = async (roomCode: string): Promise<boolean> => {
   const roomRef = doc(db, 'rooms', roomCode);
   const roomDoc = await getDoc(roomRef);
   return roomDoc.exists();
-};
-
-// Firebase接続をテストする関数
-export const testFirebaseConnection = async (): Promise<boolean> => {
-  try {
-    console.log('Testing Firebase connection...');
-    console.log('Project ID:', firebaseConfig.projectId);
-    console.log('Auth Domain:', firebaseConfig.authDomain);
-    
-    const testRef = doc(db, 'test', 'connection');
-    await setDoc(testRef, { 
-      timestamp: serverTimestamp(),
-      test: true 
-    });
-    console.log('Firebase connection test successful');
-    return true;
-  } catch (error: any) {
-    console.error('Firebase connection test failed:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Error details:', error);
-    return false;
-  }
 };
 
 export { db };
