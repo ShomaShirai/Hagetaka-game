@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
-import { gameStateAtom, updateGameStateFromRoom } from '@/lib/game-atoms';
+import { gameStateAtom, updateGameStateFromRoom, currentPlayerAtom } from '@/lib/game-atoms';
 import { subscribeToRoom } from '@/firebase/db_handler';
 import SelectNumber from './select-number';
 import RevealOtherCards from './reveal-other-cards';
@@ -10,6 +10,7 @@ import { Container, Box, Typography, Button, Alert } from '@mui/material';
 
 export default function GameScreen() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
+  const [currentPlayer, setCurrentPlayer] = useAtom(currentPlayerAtom);
   const [isMounted, setIsMounted] = useState(false);
 
   // クライアントサイドでのマウント確認
@@ -33,6 +34,14 @@ export default function GameScreen() {
       );
       
       setGameState(updatedGameState);
+      
+      // currentPlayerAtomも更新
+      const updatedCurrentPlayer = updatedGameState.players.find(
+        p => p.name === gameState.currentPlayerName
+      );
+      if (updatedCurrentPlayer) {
+        setCurrentPlayer(updatedCurrentPlayer);
+      }
     });
 
     return () => unsubscribe();

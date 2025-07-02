@@ -292,10 +292,6 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
     
     console.log(`Player ${playerName} played card ${cardValue}, phase updated to revealing`);
     
-    // // 全プレイヤーが選択したかチェック
-    // if (Object.keys(updatedMoves).length === roomData.players.length) {
-    //   await processRoundResult(roomCode);
-    // }
   } catch (error) {
     console.error('Error submitting player move:', error);
     throw error;

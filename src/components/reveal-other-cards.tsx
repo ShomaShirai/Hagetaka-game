@@ -28,14 +28,39 @@ export default function RevealOtherCards() {
     setIsMounted(true);
   }, []);
 
+  // currentPlayerが正しく設定されていない場合の対策
+  useEffect(() => {
+    if (isMounted && gameState.currentPlayerName && !currentPlayer) {
+      const foundCurrentPlayer = gameState.players.find(
+        p => p.name === gameState.currentPlayerName
+      );
+      if (foundCurrentPlayer) {
+        setCurrentPlayer(foundCurrentPlayer);
+      }
+    }
+  }, [gameState.players, gameState.currentPlayerName, currentPlayer, setCurrentPlayer, isMounted]);
+
   // マウント前は何も表示しない
   if (!isMounted) {
     return null;
   }
 
-  // 他のプレイヤーを取得
-  const otherPlayers = gameState.players.filter(p => p.id !== currentPlayer?.id);
+  // currentPlayerを確実に取得
+  const actualCurrentPlayer = currentPlayer || gameState.players.find(
+    p => p.name === gameState.currentPlayerName
+  );
+
+  // デバッグ情報
+  console.log('Current player name:', gameState.currentPlayerName);
+  console.log('Current player atom:', currentPlayer);
+  console.log('Actual current player:', actualCurrentPlayer);
+  console.log('All players:', gameState.players);
+
+  // 他のプレイヤーを取得（修正）
+  const otherPlayers = gameState.players.filter(p => p.name !== gameState.currentPlayerName);
   
+  console.log('Other players:', otherPlayers);
+
   const handleNextRound = () => {
     // スコア計算を実行
     if (gameState.currentScoreCard) {
@@ -104,9 +129,9 @@ export default function RevealOtherCards() {
           <Card sx={{ flexGrow: 1, maxWidth: "40%" }}>
             <Box sx={{ textAlign: 'center', py: 1 }}>
               <Typography variant="h6" gutterBottom>
-                あなた
+                あなた ({gameState.currentPlayerName})
               </Typography>
-              {currentPlayer?.playedCard && (
+              {actualCurrentPlayer?.playedCard && (
                 <Paper 
                   elevation={6} 
                   sx={{ 
@@ -117,12 +142,12 @@ export default function RevealOtherCards() {
                   }}
                 >
                   <Typography variant="h2">
-                    {currentPlayer.playedCard}
+                    {actualCurrentPlayer.playedCard}
                   </Typography>
                 </Paper>
               )}
               <Typography variant='body1' sx={{ mt: 2 }}>
-                現在のスコア：{currentPlayer?.score || 0}
+                現在のスコア：{actualCurrentPlayer?.score || 0}
               </Typography>
             </Box>
           </Card>

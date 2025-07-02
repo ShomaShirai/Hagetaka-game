@@ -112,7 +112,7 @@ export const updateGameStateFromRoom = (
     };
   });
 
-  // フェーズ判定ロジック（個人のphaseも考慮）
+  // フェーズ判定ロジック
   let newPhase = currentState.phase;
   
   if (room.phase === 'waiting') {
@@ -122,7 +122,6 @@ export const updateGameStateFromRoom = (
   } else if (room.phase === 'selecting') {
     newPhase = 'selecting';
   } else if (room.phase === 'revealing') {
-    // 全体がrevealingフェーズの場合
     newPhase = 'revealing';
   } else if (room.phase) {
     newPhase = room.phase;
@@ -142,3 +141,4 @@ export const updateGameStateFromRoom = (
     phase: newPhase,
   };
 };
+
