@@ -76,28 +76,7 @@ export default function TitleScreen() {
       setLoading(true);
       await startGameAsHost(currentRoom.id, playerName);
       
-      // ゲーム状態を初期化してゲーム画面に遷移
-      const updatedGameState = updateGameStateFromRoom(
-        {
-          roomCode: currentRoom.id,
-          currentPlayerName: playerName,
-          isHost: true,
-          players: [],
-          currentRound: 1,
-          scoreCards: [],
-          usedScoreCards: [],
-          currentScoreCard: null,
-          carryOverCards: [],
-          phase: 'selecting',
-          winner: null,
-          room: currentRoom,
-        },
-        currentRoom,
-        playerName
-      );
-      
-      setGameState(updatedGameState);
-      setAppScreen('game');
+      // ローカル状態の更新は削除 - Firebaseの監視で自動的に処理される
       
     } catch (error: any) {
       console.error('ゲーム開始エラー:', error);
@@ -168,12 +147,24 @@ export default function TitleScreen() {
         if (!room) {
           showSnackbar('ルームが削除されました', 'error');
           resetToInitial();
+          return;
+        }
+        
+        // ゲーム開始時に画面遷移
+        if (room.phase === 'selecting') { // statusからphaseに変更
+          const updatedGameState = updateGameStateFromRoom(
+            gameState,
+            room,
+            playerName
+          );
+          setGameState(updatedGameState);
+          setAppScreen('game');
         }
       });
 
       return () => unsubscribe();
     }
-  }, [roomCode, screenMode]);
+  }, [roomCode, screenMode, playerName, gameState, setGameState, setAppScreen]);
 
   return (
     <Container maxWidth="sm" sx={{ height: '100vh', py: 2, background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)' }}>

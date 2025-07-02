@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
-import { gameStateAtom } from '@/lib/game-atoms';
+import { gameStateAtom, updateGameStateFromRoom } from '@/lib/game-atoms';
 import { subscribeToRoom } from '@/firebase/db_handler';
 import SelectNumber from './select-number';
 import RevealOtherCards from './reveal-other-cards';
@@ -10,30 +10,38 @@ import { Container, Box, Typography, Button, Alert } from '@mui/material';
 
 export default function GameScreen() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // クライアントサイドでのマウント確認
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Firebaseからのリアルタイム更新を監視
   useEffect(() => {
-    if (!gameState.roomCode) return;
+    if (!gameState.roomCode || !isMounted) return;
 
     const unsubscribe = subscribeToRoom(gameState.roomCode, (room) => {
       if (!room) {
-        // ルームが削除された場合の処理
         return;
       }
 
-      setGameState(prev => ({
-        ...prev,
+      const updatedGameState = updateGameStateFromRoom(
+        gameState,
         room,
-        phase: room.status === 'playing' ? 
-          (Object.keys(room.playerMoves || {}).length === room.players.length ? 'revealing' : 'selecting') :
-          room.status === 'finished' ? 'finished' : prev.phase,
-        currentScoreCard: room.currentScoreCard || prev.currentScoreCard,
-        currentRound: room.currentRound || prev.currentRound,
-      }));
+        gameState.currentPlayerName || ''
+      );
+      
+      setGameState(updatedGameState);
     });
 
     return () => unsubscribe();
-  }, [gameState.roomCode, setGameState]);
+  }, [gameState.roomCode, isMounted]); // 依存配列から gameState.currentPlayerName と setGameState を削除
+
+  // マウント前は何も表示しない
+  if (!isMounted) {
+    return null;
+  }
 
   if (!gameState.room) {
     return (

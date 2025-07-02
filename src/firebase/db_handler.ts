@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, serverTimestamp, arrayUnion, Timestamp } from "firebase/firestore";
 
 // Firebase Web SDKの設定
 const firebaseConfig = {
@@ -22,9 +22,10 @@ export interface Room {
   id: string;
   hostName: string;
   players: string[];
-  status: 'waiting' | 'playing' | 'finished';
+  phase: 'first' | 'waiting' | 'selecting' | 'revealing' | 'finished'; // statusからphaseに変更
   createdAt: any;
-  gameStartedAt?: any; // ゲーム開始時刻（オプショナル）
+  gameStartedAt?: any;
+  lastUpdated?: any;
   maxPlayers: number;
   // ゲーム状態
   currentRound?: number;
@@ -32,8 +33,8 @@ export interface Room {
   scoreCards?: number[];
   usedScoreCards?: number[];
   carryOverCards?: number[];
-  playerMoves?: { [playerId: string]: number }; // プレイヤーの手札選択
-  roundResults?: any[]; // ラウンド結果の履歴
+  playerMoves?: { [playerId: string]: number };
+  roundResults?: any[];
 }
 
 // ルームを作成
@@ -44,7 +45,7 @@ export const createRoom = async (roomCode: string, hostName: string): Promise<vo
       id: roomCode,
       hostName,
       players: [hostName],
-      status: 'waiting',
+      phase: 'waiting', // statusからphaseに変更
       createdAt: serverTimestamp(),
       maxPlayers: 6
     };
@@ -69,7 +70,7 @@ export const joinRoom = async (roomCode: string, playerName: string): Promise<bo
     
     const roomData = roomDoc.data() as Room;
     
-    if (roomData.status !== 'waiting') {
+    if (roomData.phase !== 'waiting') { // statusからphaseに変更
       throw new Error('このルームは既にゲームが開始されています');
     }
     
@@ -116,7 +117,7 @@ export const startGame = async (roomCode: string): Promise<void> => {
     
     const roomData = roomDoc.data() as Room;
     
-    if (roomData.status !== 'waiting') {
+    if (roomData.phase !== 'waiting') { // statusからphaseに変更
       throw new Error('ゲームは既に開始されているか、終了しています');
     }
     
@@ -124,9 +125,9 @@ export const startGame = async (roomCode: string): Promise<void> => {
       throw new Error('ゲームを開始するには最低2人のプレイヤーが必要です');
     }
     
-    // ゲーム状態を'playing'に変更
+    // ゲーム状態を'selecting'に変更
     await updateDoc(roomRef, { 
-      status: 'playing',
+      phase: 'selecting', // statusからphaseに変更
       gameStartedAt: serverTimestamp()
     });
     
@@ -154,7 +155,7 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
       throw new Error('ゲームを開始できるのはホストのみです');
     }
     
-    if (roomData.status !== 'waiting') {
+    if (roomData.phase !== 'waiting') { // statusからphaseに変更
       throw new Error('ゲームは既に開始されているか、終了しています');
     }
     
@@ -166,9 +167,9 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
       throw new Error('ゲームに参加できるのは最大6人までです');
     }
     
-    // ゲーム状態を'playing'に変更
+    // ゲーム状態を'selecting'に変更
     await updateDoc(roomRef, { 
-      status: 'playing',
+      phase: 'selecting', // statusからphaseに変更
       gameStartedAt: serverTimestamp()
     });
     
@@ -253,7 +254,7 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
     
     const roomData = roomDoc.data() as Room;
     
-    if (roomData.status !== 'playing') {
+    if (roomData.phase !== 'selecting') { // statusからphaseに変更
       throw new Error('ゲームが開始されていません');
     }
     
@@ -298,7 +299,7 @@ export const processRoundResult = async (roomCode: string): Promise<void> => {
       round: roomData.currentRound || 1,
       scoreCard: currentScoreCard,
       playerMoves: { ...currentMoves },
-      timestamp: serverTimestamp()
+      timestamp: Timestamp.now()
     };
     
     // 結果を保存
@@ -321,8 +322,9 @@ export const processRoundResult = async (roomCode: string): Promise<void> => {
       usedScoreCards: updatedUsedScoreCards,
       currentScoreCard: nextScoreCard,
       currentRound: nextRound,
-      playerMoves: {}, // 次のラウンドのためにリセット
-      status: isGameFinished ? 'finished' : 'playing'
+      playerMoves: {},
+      phase: isGameFinished ? 'finished' : 'selecting', // statusからphaseに変更
+      lastUpdated: serverTimestamp()
     });
     
     console.log(`Round ${roomData.currentRound} processed for room:`, roomCode);

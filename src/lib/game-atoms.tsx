@@ -26,15 +26,15 @@ export interface GameState {
   usedScoreCards: number[];
   currentScoreCard: number | null;
   carryOverCards: number[];
-  phase: 'lobby' | 'waiting' | 'selecting' | 'revealing' | 'finished';
+  phase: 'first' | 'waiting' | 'selecting' | 'revealing' | 'finished';
   winner: string | null;
   
   // Firebase連携用
   room: Room | null;
 }
 
-// アプリケーションの画面状態
-export type AppScreen = 'title' | 'lobby' | 'game';
+// アプリケーションの画面状態(タイトルとゲーム中で分ける)
+export type AppScreen = 'title' | 'game';
 
 // デフォルトの手札を生成
 const createDefaultCards = (): number[] => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
@@ -46,7 +46,7 @@ export const createScoreCards = (): number[] => {
   return [...negativeCards, ...positiveCards];
 };
 
-// アプリケーション全体の状態
+// アプリケーション全体の状態(初期はタイトルっ画面)
 export const appScreenAtom = atom<AppScreen>('title');
 
 // ゲーム状態のAtom
@@ -60,10 +60,12 @@ export const gameStateAtom = atom<GameState>({
   usedScoreCards: [],
   currentScoreCard: null,
   carryOverCards: [],
-  phase: 'lobby',
+  phase: 'first',
   winner: null,
   room: null,
 });
+
+export const currentPlayerAtom = atom<GamePlayer | null>(null);
 
 // ユーティリティ関数：RoomからGamePlayerを作成
 export const createGamePlayerFromRoom = (playerName: string, isCurrentPlayer = false): GamePlayer => ({
@@ -82,9 +84,55 @@ export const updateGameStateFromRoom = (
   room: Room,
   currentPlayerName: string
 ): GameState => {
-  const players = room.players.map(playerName =>
-    createGamePlayerFromRoom(playerName, playerName === currentPlayerName)
-  );
+  // 既存のプレイヤー情報を保持しつつ、新しい情報で更新
+  const existingPlayersMap = new Map(currentState.players.map(p => [p.name, p]));
+  
+  const players = room.players.map(playerName => {
+    const existingPlayer = existingPlayersMap.get(playerName);
+    const roomMoves = room.playerMoves || {};
+    
+    // 手札を更新（選択したカードを除去）
+    let updatedCards = existingPlayer?.cards || createDefaultCards();
+    const playedCard = roomMoves[playerName];
+    
+    // playedCardが変更された場合のみ手札を更新
+    if (playedCard && playedCard !== existingPlayer?.playedCard && updatedCards.includes(playedCard)) {
+      updatedCards = updatedCards.filter(card => card !== playedCard);
+    }
+    
+    return {
+      id: `player_${playerName}`,
+      name: playerName,
+      cards: updatedCards,
+      playedCard: playedCard || null,
+      score: existingPlayer?.score || 0,
+      isReady: existingPlayer?.isReady || false,
+      isConnected: true,
+    };
+  });
+
+  // フェーズ判定ロジックを改善（より安定化）
+  let newPhase = currentState.phase;
+  
+  if (room.phase === 'waiting') {
+    newPhase = 'waiting';
+  } else if (room.phase === 'finished') {
+    newPhase = 'finished';
+  } else if (room.phase === 'selecting') {
+    const totalMoves = Object.keys(room.playerMoves || {}).length;
+    const totalPlayers = room.players.length;
+    
+    // 全プレイヤーが選択完了かつ、現在selectingフェーズの場合のみrevealingに変更
+    if (totalMoves === totalPlayers && totalPlayers > 0) {
+      newPhase = 'revealing';
+    } else {
+      // 全員が選択していない場合はselectingを維持
+      newPhase = 'selecting';
+    }
+  } else if (room.phase) {
+    // その他のフェーズは直接使用
+    newPhase = room.phase;
+  }
 
   return {
     ...currentState,
@@ -93,8 +141,10 @@ export const updateGameStateFromRoom = (
     isHost: room.hostName === currentPlayerName,
     players,
     room,
-    phase: room.status === 'waiting' ? 'waiting' : 
-           room.status === 'playing' ? 'selecting' : 
-           currentState.phase,
+    currentRound: room.currentRound || currentState.currentRound,
+    currentScoreCard: room.currentScoreCard !== undefined ? room.currentScoreCard : currentState.currentScoreCard,
+    scoreCards: room.scoreCards || currentState.scoreCards,
+    usedScoreCards: room.usedScoreCards || currentState.usedScoreCards,
+    phase: newPhase,
   };
 };

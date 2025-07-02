@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -21,6 +21,17 @@ export default function SelectNumber() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
   const [selectedCard, setSelectedCard] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // クライアントサイドでのマウント確認
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // マウント前は何も表示しない（サーバーサイドレンダリングを完全に回避）
+  if (!isMounted) {
+    return null;
+  }
 
   // 現在のプレイヤーを取得
   const currentPlayer = gameState.players.find(p => p.name === gameState.currentPlayerName);
@@ -36,38 +47,25 @@ export default function SelectNumber() {
   }
 
   // 使用可能なカード（まだ使用していないカード）
-  const availableCards = currentPlayer.cards;
+  const availableCards = currentPlayer.cards || [];
   const userCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const scoreCards = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   const handleCardSelect = (cardNumber: number) => {
     // 使用可能なカードのみ選択可能
-    if (availableCards.includes(cardNumber)) {
+    if (availableCards.includes(cardNumber) && !isSubmitting) {
       setSelectedCard(cardNumber);
     }
   };
 
   const handleConfirm = async () => {
-    if (!selectedCard || !gameState.roomCode || !gameState.currentPlayerName) return;
+    if (!selectedCard || !gameState.roomCode || !gameState.currentPlayerName || isSubmitting) return;
     
     setIsSubmitting(true);
     try {
       await submitPlayerMove(gameState.roomCode, gameState.currentPlayerName, selectedCard);
       
-      // ローカル状態を更新
-      setGameState(prev => ({
-        ...prev,
-        players: prev.players.map(player => 
-          player.name === gameState.currentPlayerName
-            ? { 
-                ...player, 
-                playedCard: selectedCard,
-                cards: player.cards.filter(card => card !== selectedCard)
-              }
-            : player
-        )
-      }));
-
+      // 成功した場合のみselectedCardをリセット
       setSelectedCard(null);
     } catch (error: any) {
       console.error('カード送信エラー:', error);
@@ -76,6 +74,27 @@ export default function SelectNumber() {
       setIsSubmitting(false);
     }
   };
+
+  // 既にカードを選択済みの場合は待機画面を表示
+  if (currentPlayer.playedCard !== null) {
+    return (
+      <Container maxWidth="sm" sx={{ height: '100vh', py: 2, background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', alignItems: 'center', gap: 3 }}>
+          <Typography variant="h5" sx={{ textAlign: 'center' }}>
+            カードを選択しました
+          </Typography>
+          <Paper elevation={4} sx={{ p: 3, backgroundColor: 'success.main', color: 'success.contrastText' }}>
+            <Typography variant="h1">
+              {currentPlayer.playedCard}
+            </Typography>
+          </Paper>
+          <Typography variant="h6" sx={{ textAlign: 'center' }}>
+            他のプレイヤーの選択を待っています...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ height: '100vh', py: 2, background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%)' }}>
@@ -238,3 +257,4 @@ export default function SelectNumber() {
     </Container>
   );
 }
+

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Box, 
   Card, 
@@ -10,7 +10,7 @@ import {
   Button
 } from '@mui/material';
 import { useAtom } from 'jotai';
-import { gameStateAtom, currentPlayerAtom } from '@/lib/atoms';
+import { gameStateAtom, currentPlayerAtom } from '@/lib/game-atoms';
 import { calculateScore, updatePlayersScore, getNextScoreCard, addUsedScoreCard, isGameFinished } from '@/lib/game-logic';
 import TwoPlayerLayout from './reveal-other-number/TwoPlayerLayout';
 import ThreePlayerLayout from './reveal-other-number/ThreePlayerLayout';
@@ -21,30 +21,17 @@ import SixPlayerLayout from './reveal-other-number/SixPlayerLayout';
 export default function RevealOtherCards() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
   const [currentPlayer, setCurrentPlayer] = useAtom(currentPlayerAtom);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // CPUプレイヤーにランダムなカードをプレイさせる
+  // クライアントサイドでのマウント確認
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setGameState(prev => ({
-        ...prev,
-        players: prev.players.map(player => {
-          if (player.id !== currentPlayer?.id && !player.playedCard) {
-            // CPUプレイヤーにランダムなカードをプレイさせる
-            const availableCards = player.cards;
-            const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-            return { 
-              ...player, 
-              playedCard: randomCard,
-              cards: player.cards.filter(card => card !== randomCard)
-            };
-          }
-          return player;
-        })
-      }));
-    }, 1000);
+    setIsMounted(true);
+  }, []);
 
-    return () => clearTimeout(timer);
-  }, [setGameState, currentPlayer?.id]);
+  // マウント前は何も表示しない
+  if (!isMounted) {
+    return null;
+  }
 
   // 他のプレイヤーを取得
   const otherPlayers = gameState.players.filter(p => p.id !== currentPlayer?.id);
