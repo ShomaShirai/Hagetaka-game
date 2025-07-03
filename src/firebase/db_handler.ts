@@ -298,6 +298,28 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
   }
 };
 
+// 点数を更新
+export const updateDBPlayerScore = async (roomCode: string, playerName: string, score: number): Promise<void> => {
+  try {
+    const roomRef = doc(db, "rooms", roomCode);
+    const roomDoc = await getDoc(roomRef);
+
+    if (!roomDoc.exists()) {
+      throw new Error('ルームが見つかりません');
+    }
+
+    const roomData = roomDoc.data() as Room;
+    const updatedPlayers = roomData.players.map(player => {
+      if (player.playerName === playerName) {
+        return {...player, score: (player.score || 0) + score };
+      }
+    })
+  } catch (error) {
+    console.error('Error updating player score:', error);
+    throw error;
+  }
+}
+
 // ラウンド結果を処理
 export const processRoundResult = async (roomCode: string): Promise<void> => {
   try {

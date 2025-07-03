@@ -50,12 +50,6 @@ export default function RevealOtherCards() {
     p => p.name === gameState.currentPlayerName
   );
 
-  // デバッグ情報
-  console.log('Current player name:', gameState.currentPlayerName);
-  console.log('Current player atom:', currentPlayer);
-  console.log('Actual current player:', actualCurrentPlayer);
-  console.log('All players:', gameState.players);
-
   // 他のプレイヤーを取得（修正）
   const otherPlayers = gameState.players.filter(p => p.name !== gameState.currentPlayerName);
   
