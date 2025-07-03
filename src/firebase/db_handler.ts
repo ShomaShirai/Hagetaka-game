@@ -299,7 +299,7 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
 };
 
 // 点数を更新
-export const updateDBPlayerScore = async (roomCode: string, playerName: string, score: number): Promise<void> => {
+export const updateDBPlayerScore = async (roomCode: string, playerName: string, scoreChange: number): Promise<void> => {
   try {
     const roomRef = doc(db, "rooms", roomCode);
     const roomDoc = await getDoc(roomRef);
@@ -311,14 +311,21 @@ export const updateDBPlayerScore = async (roomCode: string, playerName: string, 
     const roomData = roomDoc.data() as Room;
     const updatedPlayers = roomData.players.map(player => {
       if (player.playerName === playerName) {
-        return {...player, score: (player.score || 0) + score };
+        return { ...player, score: (player.score || 0) + scoreChange };
       }
-    })
+      return player;
+    });
+
+    await updateDoc(roomRef, {
+      players: updatedPlayers
+    });
+
+    console.log(`Player ${playerName} score updated by ${scoreChange}`);
   } catch (error) {
     console.error('Error updating player score:', error);
     throw error;
   }
-}
+};
 
 // ラウンド結果を処理
 export const processRoundResult = async (roomCode: string): Promise<void> => {
@@ -357,12 +364,19 @@ export const processRoundResult = async (roomCode: string): Promise<void> => {
     // ゲーム終了判定
     const isGameFinished = remainingScoreCards.length === 0 || nextRound > 15;
     
+    // 次のラウンド用に全プレイヤーのphaseを'selecting'にリセット
+    const resetPlayers = roomData.players.map(player => ({
+      ...player,
+      phase: isGameFinished ? 'finished' : 'selecting'
+    }));
+    
     await updateDoc(roomRef, {
       roundResults: updatedResults,
       usedScoreCards: updatedUsedScoreCards,
       currentScoreCard: nextScoreCard,
       currentRound: nextRound,
       playerMoves: {},
+      players: resetPlayers,
       phase: isGameFinished ? 'finished' : 'selecting',
       lastUpdated: serverTimestamp()
     });

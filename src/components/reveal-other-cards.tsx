@@ -17,6 +17,7 @@ import ThreePlayerLayout from './reveal-other-number/ThreePlayerLayout';
 import FourPlayerLayout from './reveal-other-number/FourPlayerLayout';
 import FivePlayerLayout from './reveal-other-number/FivePlayerLayout';
 import SixPlayerLayout from './reveal-other-number/SixPlayerLayout';
+import { updateDBPlayerScore, processRoundResult } from '@/firebase/db_handler';
 
 export default function RevealOtherCards() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
@@ -55,37 +56,27 @@ export default function RevealOtherCards() {
   
   console.log('Other players:', otherPlayers);
 
-  const handleNextRound = () => {
+  const handleNextRound = async () => {
     // スコア計算を実行
-    if (gameState.currentScoreCard) {
-      const scoreResults = calculateScore(gameState.players, gameState.currentScoreCard);
-      const updatedPlayers = updatePlayersScore(gameState.players, scoreResults);
-      
-      // 使用済みスコアカードに追加
-      const newUsedScoreCards = addUsedScoreCard(gameState.usedScoreCards, gameState.currentScoreCard);
-      
-      // 次のスコアカードを取得
-      const nextScoreCard = getNextScoreCard(gameState.scoreCards, newUsedScoreCards);
-      
-      // ゲーム終了判定
-      const gameFinished = isGameFinished(gameState.scoreCards, newUsedScoreCards);
-      
-      setGameState(prev => ({
-        ...prev,
-        phase: gameFinished ? 'finished' : 'selecting',
-        currentRound: prev.currentRound + 1,
-        usedScoreCards: newUsedScoreCards,
-        currentScoreCard: nextScoreCard,
-        players: updatedPlayers.map(player => ({
-          ...player,
-          playedCard: null
-        }))
-      }));
-      
-      // 現在のプレイヤーの情報も更新
-      const updatedCurrentPlayer = updatedPlayers.find(p => p.id === currentPlayer?.id);
-      if (updatedCurrentPlayer) {
-        setCurrentPlayer(updatedCurrentPlayer);
+    if (gameState.currentScoreCard && gameState.roomCode) {
+      try {
+        const scoreResults = calculateScore(gameState.players, gameState.currentScoreCard);
+        
+        // 各プレイヤーのスコア変更をFirebaseに保存
+        for (const result of scoreResults) {
+          const player = gameState.players.find(p => p.id === result.playerId);
+          if (player && result.scoreChange !== 0) {
+            await updateDBPlayerScore(gameState.roomCode, player.name, result.scoreChange);
+          }
+        }
+
+        // ラウンド結果の処理（次のラウンドへの移行など）
+        await processRoundResult(gameState.roomCode);
+
+        console.log('Round completed and scores updated');
+      } catch (error) {
+        console.error('Error processing round:', error);
+        alert('ラウンド処理中にエラーが発生しました');
       }
     }
   };
