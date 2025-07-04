@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Box, Typography, Paper } from '@mui/material';
+import { Card, Box, Typography, Paper, Chip } from '@mui/material';
 
 interface PlayerCardProps {
   player: any;
@@ -10,6 +10,25 @@ export default function PlayerCard({
   player, 
   backgroundColor = 'primary.main' 
 }: PlayerCardProps) {
+  // スコア変動表示コンポーネント
+  const ScoreChangeChip = ({ scoreChange }: { scoreChange: number }) => {
+    if (scoreChange === 0) return null;
+    
+    return (
+      <Chip
+        label={scoreChange > 0 ? `+${scoreChange}` : `${scoreChange}`}
+        size="small"
+        sx={{
+          ml: 1,
+          backgroundColor: scoreChange > 0 ? 'success.main' : 'error.main',
+          color: scoreChange > 0 ? 'success.contrastText' : 'error.contrastText',
+          fontWeight: 'bold',
+          animation: 'pulse 1s infinite'
+        }}
+      />
+    );
+  };
+
   return (
     <Card sx={{ flexGrow: 1, maxWidth: "60%" }}>
       <Box sx={{ textAlign: 'center', py: 1 }}>
@@ -44,9 +63,14 @@ export default function PlayerCard({
             </Typography>
           </Paper>
         )}
-        <Typography variant='body1' sx={{ mt: 2 }}>
-          現在のスコア：{player?.score || 0}
-        </Typography>
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant='body1'>
+            現在のスコア：{player?.score || 0}
+          </Typography>
+          {player?.scoreChange !== undefined && (
+            <ScoreChangeChip scoreChange={player.scoreChange} />
+          )}
+        </Box>
       </Box>
     </Card>
   );

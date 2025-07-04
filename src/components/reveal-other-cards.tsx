@@ -7,7 +7,8 @@ import {
   Typography, 
   Paper,
   Container,
-  Button
+  Button,
+  Chip
 } from '@mui/material';
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/game-atoms';
@@ -23,11 +24,22 @@ export default function RevealOtherCards() {
   const [gameState, setGameState] = useAtom(gameStateAtom);
   const [currentPlayer, setCurrentPlayer] = useAtom(currentPlayerAtom);
   const [isMounted, setIsMounted] = useState(false);
+  const [scoreResults, setScoreResults] = useState<any[]>([]);
+  const [showScoreChanges, setShowScoreChanges] = useState(false);
 
   // クライアントサイドでのマウント確認
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // 画面表示時にスコア計算を実行
+  useEffect(() => {
+    if (isMounted && gameState.currentScoreCard && gameState.players.every(p => p.playedCard !== null)) {
+      const results = calculateScore(gameState.players, gameState.currentScoreCard);
+      setScoreResults(results);
+      setShowScoreChanges(true);
+    }
+  }, [isMounted, gameState.currentScoreCard, gameState.players]);
 
   // currentPlayerが正しく設定されていない場合の対策
   useEffect(() => {
@@ -51,17 +63,37 @@ export default function RevealOtherCards() {
     p => p.name === gameState.currentPlayerName
   );
 
-  // 他のプレイヤーを取得（修正）
+  // 他のプレイヤーを取得
   const otherPlayers = gameState.players.filter(p => p.name !== gameState.currentPlayerName);
-  
-  console.log('Other players:', otherPlayers);
+
+  // プレイヤーのスコア変動を取得
+  const getScoreChange = (playerId: string) => {
+    const result = scoreResults.find(r => r.playerId === playerId);
+    return result ? result.scoreChange : 0;
+  };
+
+  // スコア変動表示コンポーネント
+  const ScoreChangeChip = ({ scoreChange }: { scoreChange: number }) => {
+    if (scoreChange === 0) return null;
+    
+    return (
+      <Chip
+        label={scoreChange > 0 ? `+${scoreChange}` : `${scoreChange}`}
+        size="small"
+        sx={{
+          ml: 1,
+          backgroundColor: scoreChange > 0 ? 'success.main' : 'error.main',
+          color: scoreChange > 0 ? 'success.contrastText' : 'error.contrastText',
+          fontWeight: 'bold',
+          animation: 'pulse 1s infinite'
+        }}
+      />
+    );
+  };
 
   const handleNextRound = async () => {
-    // スコア計算を実行
     if (gameState.currentScoreCard && gameState.roomCode) {
       try {
-        const scoreResults = calculateScore(gameState.players, gameState.currentScoreCard);
-        
         // 各プレイヤーのスコア変更をFirebaseに保存
         for (const result of scoreResults) {
           const player = gameState.players.find(p => p.id === result.playerId);
@@ -73,6 +105,10 @@ export default function RevealOtherCards() {
         // ラウンド結果の処理（次のラウンドへの移行など）
         await processRoundResult(gameState.roomCode);
 
+        // 状態をリセット
+        setScoreResults([]);
+        setShowScoreChanges(false);
+
         console.log('Round completed and scores updated');
       } catch (error) {
         console.error('Error processing round:', error);
@@ -81,19 +117,25 @@ export default function RevealOtherCards() {
     }
   };
 
-  // プレイヤー数に応じたレイアウト決定
+  // プレイヤー数に応じたレイアウト決定（スコア変動情報付き）
   const renderPlayerLayout = () => {
+    // 他のプレイヤーにスコア変動情報を追加
+    const otherPlayersWithScoreChange = otherPlayers.map(player => ({
+      ...player,
+      scoreChange: showScoreChanges ? getScoreChange(player.id) : 0
+    }));
+
     if (otherPlayers.length === 1) {
-      return <TwoPlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
+      return <TwoPlayerLayout otherPlayers={otherPlayersWithScoreChange} currentScoreCard={gameState.currentScoreCard} />;
     } else if (otherPlayers.length === 2) {
-      return <ThreePlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
+      return <ThreePlayerLayout otherPlayers={otherPlayersWithScoreChange} currentScoreCard={gameState.currentScoreCard} />;
     } else if (otherPlayers.length === 3) {
-      return <FourPlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
+      return <FourPlayerLayout otherPlayers={otherPlayersWithScoreChange} currentScoreCard={gameState.currentScoreCard} />;
     } else if (otherPlayers.length === 4) {
-      return <FivePlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
+      return <FivePlayerLayout otherPlayers={otherPlayersWithScoreChange} currentScoreCard={gameState.currentScoreCard} />;
     } else if (otherPlayers.length === 5) {
-      return <SixPlayerLayout otherPlayers={otherPlayers} currentScoreCard={gameState.currentScoreCard} />;
-    } 
+      return <SixPlayerLayout otherPlayers={otherPlayersWithScoreChange} currentScoreCard={gameState.currentScoreCard} />;
+    }
   };
 
   return (
@@ -131,9 +173,14 @@ export default function RevealOtherCards() {
                   </Typography>
                 </Paper>
               )}
-              <Typography variant='body1' sx={{ mt: 2 }}>
-                現在のスコア：{actualCurrentPlayer?.score || 0}
-              </Typography>
+              <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography variant='body1'>
+                  現在のスコア：{actualCurrentPlayer?.score || 0}
+                </Typography>
+                {showScoreChanges && actualCurrentPlayer && (
+                  <ScoreChangeChip scoreChange={getScoreChange(actualCurrentPlayer.id)} />
+                )}
+              </Box>
             </Box>
           </Card>
         </Box>
