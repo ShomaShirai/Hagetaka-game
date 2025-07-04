@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/game-atoms';
-import { calculateScore } from '@/lib/game-logic';
+import { calculateScore, isGameFinished } from '@/lib/game-logic';
 import TwoPlayerLayout from './reveal-other-number/TwoPlayerLayout';
 import ThreePlayerLayout from './reveal-other-number/ThreePlayerLayout';
 import FourPlayerLayout from './reveal-other-number/FourPlayerLayout';
@@ -26,6 +26,7 @@ export default function RevealOtherCards() {
   const [isMounted, setIsMounted] = useState(false);
   const [scoreResults, setScoreResults] = useState<any[]>([]);
   const [showScoreChanges, setShowScoreChanges] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
 
   // クライアントサイドでのマウント確認
   useEffect(() => {
@@ -39,7 +40,12 @@ export default function RevealOtherCards() {
       setScoreResults(results);
       setShowScoreChanges(true);
     }
-  }, [isMounted, gameState.currentScoreCard, gameState.players]);
+    // ゲームが終了したかどうかをチェック
+    if (isMounted && gameState.usedScoreCards && gameState.scoreCards) {
+      const finished = isGameFinished(gameState.scoreCards, gameState.usedScoreCards);
+      setIsFinished(finished);
+    }
+  }, [isMounted, gameState.currentScoreCard, gameState.players, gameState.usedScoreCards, gameState.scoreCards]);
 
   // currentPlayerが正しく設定されていない場合の対策
   useEffect(() => {
@@ -91,6 +97,7 @@ export default function RevealOtherCards() {
     );
   };
 
+
   const handleNextRound = async () => {
     if (gameState.currentScoreCard && gameState.roomCode) {
       try {
@@ -113,6 +120,28 @@ export default function RevealOtherCards() {
       } catch (error) {
         console.error('Error processing round:', error);
         alert('ラウンド処理中にエラーが発生しました');
+      }
+    }
+  };
+
+  const handleViewResults = async () => {
+    if (gameState.currentScoreCard && gameState.roomCode) {
+      try {
+        // 各プレイヤーのスコア変更をFirebaseに保存
+        for (const result of scoreResults) {
+          const player = gameState.players.find(p => p.id === result.playerId);
+          if (player && result.scoreChange !== 0) {
+            await updateDBPlayerScore(gameState.roomCode, player.name, result.scoreChange);
+          }
+        }
+
+        // 最終ラウンドの処理（ゲーム終了状態に移行）
+        await processRoundResult(gameState.roomCode);
+
+        console.log('Game completed and final scores updated');
+      } catch (error) {
+        console.error('Error processing final round:', error);
+        alert('最終ラウンド処理中にエラーが発生しました');
       }
     }
   };
@@ -199,11 +228,17 @@ export default function RevealOtherCards() {
           {gameState.players.every(p => p.playedCard !== null) && gameState.isHost && (
             <Button 
               variant="contained" 
-              color="primary" 
+              color={isFinished ? "secondary" : "primary"}
               size="large"
-              onClick={handleNextRound}
+              onClick={isFinished ? handleViewResults : handleNextRound}
+              sx={{
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+                px: 4,
+                py: 1.5
+              }}
             >
-              次のラウンド
+              {isFinished ? '結果を見る' : '次のラウンド'}
             </Button>
           )}
         </Box>
