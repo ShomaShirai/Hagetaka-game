@@ -23,7 +23,7 @@ export interface GameState {
   players: GamePlayer[];
   currentRound: number;
   scoreCards: number[];
-  usedScoreCards: number[];
+  usedScoreCards: number[]; // スコアカードなので，ユーザーのカードではない
   currentScoreCard: number | null;
   carryOverCards: number[];
   phase: 'first' | 'waiting' | 'selecting' | 'revealing' | 'finished';
@@ -92,20 +92,21 @@ export const updateGameStateFromRoom = (
     const existingPlayer = existingPlayersMap.get(playerName);
     const roomMoves = room.playerMoves || {};
     
-    // 手札を更新（選択したカードを除去）
-    let updatedCards = existingPlayer?.cards || createDefaultCards();
-    const playedCard = roomMoves[playerName];
+    // 手札を計算（初期手札から使用済みカードを除去）
+    const initialCards = createDefaultCards();
+    const usedCards = playerObj.usedCards || [];
+    const availableCards = initialCards.filter(card => !usedCards.includes(card));
     
-    // playedCardが変更された場合のみ手札を更新
-    if (playedCard && playedCard !== existingPlayer?.playedCard && updatedCards.includes(playedCard)) {
-      updatedCards = updatedCards.filter(card => card !== playedCard);
-    }
+    // 現在のラウンドでプレイしたカード
+    const playedCard = roomMoves[playerName] || null;
+    
+    console.log(`Player ${playerName}: usedCards=${usedCards}, availableCards=${availableCards}, playedCard=${playedCard}`);
     
     return {
       id: `player_${playerName}`,
       name: playerName,
-      cards: updatedCards,
-      playedCard: playedCard || null,
+      cards: availableCards,
+      playedCard: playedCard,
       score: playerObj.score || existingPlayer?.score || 0,
       isReady: existingPlayer?.isReady || false,
       isConnected: true,

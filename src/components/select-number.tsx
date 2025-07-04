@@ -14,7 +14,7 @@ import {
   Alert
 } from '@mui/material';
 import { useAtom } from 'jotai';
-import { gameStateAtom } from '@/lib/game-atoms';
+import { gameStateAtom, currentPlayerAtom } from '@/lib/game-atoms';
 import { submitPlayerMove } from '@/firebase/db_handler';
 
 export default function SelectNumber() {
@@ -26,7 +26,13 @@ export default function SelectNumber() {
   // クライアントサイドでのマウント確認
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    console.log("ゲーム状態:", gameState);
+    console.log("全プレイヤーのplayedCard:", gameState.players.map(p => ({
+      name: p.name,
+      playedCard: p.playedCard,
+      availableCards: p.cards
+    })));
+  }, [gameState]);
 
   // マウント前は何も表示しない（サーバーサイドレンダリングを完全に回避）
   if (!isMounted) {
@@ -48,6 +54,7 @@ export default function SelectNumber() {
 
   // 使用可能なカード（まだ使用していないカード）
   const availableCards = currentPlayer.cards || [];
+  console.log(`Current player ${currentPlayer.name} - Available cards:`, availableCards);
   const userCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const scoreCards = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -62,22 +69,27 @@ export default function SelectNumber() {
     if (!selectedCard || !gameState.roomCode || !gameState.currentPlayerName || isSubmitting) return;
     
     setIsSubmitting(true);
-    console.log("前のphase", gameState.phase);
+    console.log("選択したカード:", selectedCard);
+    console.log("現在の利用可能カード:", availableCards);
+    
     try {
       await submitPlayerMove(gameState.roomCode, gameState.currentPlayerName, selectedCard);
       
-      // 成功した場合のみselectedCardをリセット
-      setSelectedCard(null);
-      // ローカル状態更新：該当プレイヤーのphaseを'revealing'に変更
+      // 楽観的更新：ローカル状態を即座に更新
       setGameState(prev => ({
         ...prev,
         players: prev.players.map(player => 
           player.name === gameState.currentPlayerName 
-            ? { ...player, playedCard: selectedCard }
+            ? { 
+                ...player, 
+                playedCard: selectedCard,
+                cards: player.cards.filter(card => card !== selectedCard)
+              }
             : player
         ),
       }));
-      console.log("後のphase", gameState.phase);
+      
+      setSelectedCard(null);
     } catch (error: any) {
       console.error('カード送信エラー:', error);
       alert(error.message || 'カードの送信に失敗しました');

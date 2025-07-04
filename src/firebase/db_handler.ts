@@ -21,7 +21,12 @@ const db = getFirestore(app);
 export interface Room {
   id: string;
   hostName: string;
-  players: { playerName: string, score?: number, phase?: string }[]; // プレイヤー情報をオブジェクトの配列に変更
+  players: { 
+    playerName: string, 
+    score?: number, 
+    phase?: string,
+    usedCards?: number[] // 使用済みカードの履歴を追加
+  }[];
   phase: 'first' | 'waiting' | 'selecting' | 'revealing' | 'finished';
   createdAt: any;
   gameStartedAt?: any;
@@ -272,12 +277,18 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
       [playerName]: cardValue
     };
     
-    // 該当プレイヤーのphaseを'revealing'に更新
-    const updatedPlayers = roomData.players.map(player => 
-      player.playerName === playerName 
-        ? { ...player, phase: 'revealing' }
-        : player
-    );
+    // 該当プレイヤーのphaseを'revealing'に更新し、使用済みカードを記録
+    const updatedPlayers = roomData.players.map(player => {
+      if (player.playerName === playerName) {
+        const currentUsedCards = player.usedCards || [];
+        return {
+          ...player,
+          phase: 'revealing',
+          usedCards: [...currentUsedCards, cardValue] // 使用済みカードに追加
+        };
+      }
+      return player;
+    });
     
     // 全プレイヤーが'revealing'フェーズになったかチェック
     const allPlayersRevealing = updatedPlayers.every(player => player.phase === 'revealing');
