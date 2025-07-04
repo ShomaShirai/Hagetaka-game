@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useAtom } from 'jotai';
 import { gameStateAtom, currentPlayerAtom } from '@/lib/game-atoms';
-import { calculateScore, updatePlayersScore, getNextScoreCard, addUsedScoreCard, isGameFinished } from '@/lib/game-logic';
+import { calculateScore } from '@/lib/game-logic';
 import TwoPlayerLayout from './reveal-other-number/TwoPlayerLayout';
 import ThreePlayerLayout from './reveal-other-number/ThreePlayerLayout';
 import FourPlayerLayout from './reveal-other-number/FourPlayerLayout';
@@ -185,9 +185,18 @@ export default function RevealOtherCards() {
           </Card>
         </Box>
 
+        {/* スコア変動の説明 */}
+        {showScoreChanges && scoreResults.length > 0 && (
+          <Box sx={{ textAlign: 'center', px: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              {scoreResults.find(r => r.scoreChange !== 0)?.reason || 'このラウンドはスコア変動なし'}
+            </Typography>
+          </Box>
+        )}
+
         {/* 次のラウンドボタン用のスペース（常に確保）*/}
         <Box sx={{ textAlign: 'center', minHeight: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {gameState.players.every(p => p.playedCard !== null) && (
+          {gameState.players.every(p => p.playedCard !== null) && gameState.isHost && (
             <Button 
               variant="contained" 
               color="primary" 
