@@ -128,7 +128,7 @@ export function getNextScoreCard(scoreCards: number[], usedScoreCards: number[])
 
 // ゲームが終了したかどうかを判定する関数
 export function isGameFinished(scoreCards: number[], usedScoreCards: number[]): boolean {
-  return usedScoreCards.length >= scoreCards.length;
+  return usedScoreCards.length + 1 >= scoreCards.length;
 }
 
 // 使用済みスコアカードリストに追加する関数
