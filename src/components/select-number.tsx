@@ -26,12 +26,6 @@ export default function SelectNumber() {
   // クライアントサイドでのマウント確認
   useEffect(() => {
     setIsMounted(true);
-    console.log("ゲーム状態:", gameState);
-    console.log("全プレイヤーのplayedCard:", gameState.players.map(p => ({
-      name: p.name,
-      playedCard: p.playedCard,
-      availableCards: p.cards
-    })));
   }, [gameState]);
 
   // マウント前は何も表示しない（サーバーサイドレンダリングを完全に回避）
@@ -54,7 +48,6 @@ export default function SelectNumber() {
 
   // 使用可能なカード（まだ使用していないカード）
   const availableCards = currentPlayer.cards || [];
-  console.log(`Current player ${currentPlayer.name} - Available cards:`, availableCards);
   const userCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const scoreCards = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -67,10 +60,7 @@ export default function SelectNumber() {
 
   const handleConfirm = async () => {
     if (!selectedCard || !gameState.roomCode || !gameState.currentPlayerName || isSubmitting) return;
-    
     setIsSubmitting(true);
-    console.log("選択したカード:", selectedCard);
-    console.log("現在の利用可能カード:", availableCards);
     
     try {
       await submitPlayerMove(gameState.roomCode, gameState.currentPlayerName, selectedCard);
