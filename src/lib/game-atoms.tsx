@@ -99,7 +99,7 @@ export const updateGameStateFromRoom = (
     
     // 現在のラウンドでプレイしたカード
     const playedCard = roomMoves[playerName] || null;
-     
+    
     return {
       id: `player_${playerName}`,
       name: playerName,

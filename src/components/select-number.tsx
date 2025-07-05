@@ -48,6 +48,7 @@ export default function SelectNumber() {
 
   // 使用可能なカード（まだ使用していないカード）
   const availableCards = currentPlayer.cards || [];
+  
   const userCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const scoreCards = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
