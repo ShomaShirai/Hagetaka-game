@@ -115,8 +115,6 @@ export default function RevealOtherCards() {
         // 状態をリセット
         setScoreResults([]);
         setShowScoreChanges(false);
-
-        console.log('Round completed and scores updated');
       } catch (error) {
         console.error('Error processing round:', error);
         alert('ラウンド処理中にエラーが発生しました');
@@ -137,8 +135,6 @@ export default function RevealOtherCards() {
 
         // 最終ラウンドの処理（ゲーム終了状態に移行）
         await processRoundResult(gameState.roomCode);
-
-        console.log('Game completed and final scores updated');
       } catch (error) {
         console.error('Error processing final round:', error);
         alert('最終ラウンド処理中にエラーが発生しました');
@@ -246,4 +242,5 @@ export default function RevealOtherCards() {
     </Container>
   );
 }
+
 

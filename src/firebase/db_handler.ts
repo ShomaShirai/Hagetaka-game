@@ -56,7 +56,6 @@ export const createRoom = async (roomCode: string, hostName: string): Promise<vo
     };
     
     await setDoc(roomRef, roomData);
-    console.log('Room created successfully');
   } catch (error) {
     console.error('Error creating room:', error);
     throw error;
@@ -90,7 +89,6 @@ export const joinRoom = async (roomCode: string, playerName: string): Promise<bo
     
     const updatedPlayers = [...roomData.players, { playerName, score: 0, phase: 'waiting' }];
     await updateDoc(roomRef, { players: updatedPlayers });
-    console.log('Player joined successfully');
     
     return true;
   } catch (error) {
@@ -136,8 +134,6 @@ export const startGame = async (roomCode: string): Promise<void> => {
       phase: 'selecting',
       gameStartedAt: serverTimestamp()
     });
-    
-    console.log('Game started for room:', roomCode);
   } catch (error) {
     console.error('Error starting game:', error);
     throw error;
@@ -188,8 +184,6 @@ export const startGameAsHost = async (roomCode: string, playerName: string): Pro
     
     // ゲーム状態を初期化
     await initializeGameState(roomCode);
-    
-    console.log(`Game started by host ${playerName} for room: ${roomCode}`);
   } catch (error) {
     console.error('Error starting game as host:', error);
     throw error;
@@ -247,8 +241,6 @@ export const initializeGameState = async (roomCode: string): Promise<void> => {
       playerMoves: {},
       roundResults: []
     });
-    
-    console.log('Game state initialized for room:', roomCode);
   } catch (error) {
     console.error('Error initializing game state:', error);
     throw error;
@@ -292,7 +284,6 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
     
     // 全プレイヤーが'revealing'フェーズになったかチェック
     const allPlayersRevealing = updatedPlayers.every(player => player.phase === 'revealing');
-    console.log(`All players revealing: ${allPlayersRevealing}`);
     
     await updateDoc(roomRef, {
       playerMoves: updatedMoves,
@@ -300,8 +291,6 @@ export const submitPlayerMove = async (roomCode: string, playerName: string, car
       // 全員がrevealingになったら全体のphaseも更新
       ...(allPlayersRevealing && { phase: 'revealing' })
     });
-    
-    console.log(`Player ${playerName} played card ${cardValue}, phase updated to revealing`);
     
   } catch (error) {
     console.error('Error submitting player move:', error);
@@ -330,8 +319,6 @@ export const updateDBPlayerScore = async (roomCode: string, playerName: string, 
     await updateDoc(roomRef, {
       players: updatedPlayers
     });
-
-    console.log(`Player ${playerName} score updated by ${scoreChange}`);
   } catch (error) {
     console.error('Error updating player score:', error);
     throw error;
@@ -391,8 +378,6 @@ export const processRoundResult = async (roomCode: string): Promise<void> => {
       phase: isGameFinished ? 'finished' : 'selecting',
       lastUpdated: serverTimestamp()
     });
-    
-    console.log(`Round ${roomData.currentRound} processed for room:`, roomCode);
   } catch (error) {
     console.error('Error processing round result:', error);
     throw error;

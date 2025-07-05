@@ -26,7 +26,7 @@ export default function SelectNumber() {
   // クライアントサイドでのマウント確認
   useEffect(() => {
     setIsMounted(true);
-  }, [gameState]);
+  }, []); // 依存配列を空にして一度だけ実行
 
   // マウント前は何も表示しない（サーバーサイドレンダリングを完全に回避）
   if (!isMounted) {
